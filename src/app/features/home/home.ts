@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { UpperCasePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -24,7 +24,7 @@ import { SheetConfigService } from '@core/google-sheets/sheet-config.service';
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent {
   private readonly auth        = inject(AuthService);
   private readonly router      = inject(Router);
   private readonly sheetConfig = inject(SheetConfigService);
@@ -51,18 +51,16 @@ export class HomeComponent implements OnInit {
     { icon: 'sync',             key: 'migrate'      },
   ] as const;
 
-  ngOnInit(): void {
-    if (this.auth.isAuthenticated()) {
-      this.router.navigate(['/dashboard'], { replaceUrl: true });
-    }
-  }
-
   signIn(): void {
-    this.auth.login();
+    if (this.auth.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+    } else {
+      this.auth.login();
+    }
   }
 
   useOffline(): void {
     this.sheetConfig.setDataMode('local');
-    this.router.navigate(['/settings'], { replaceUrl: true });
+    this.router.navigate(['/settings']);
   }
 }
