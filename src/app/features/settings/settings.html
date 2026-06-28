@@ -108,6 +108,16 @@
           </button>
         }
 
+        <!-- Reset -->
+        <button mat-button color="warn" (click)="svc.resetExpenses()">
+          <mat-icon>delete_sweep</mat-icon>
+          {{ t('settings.reset_expenses') }}
+        </button>
+        <button mat-button color="warn" (click)="svc.resetAllData()">
+          <mat-icon>delete_forever</mat-icon>
+          {{ t('settings.reset_all') }}
+        </button>
+
         <!-- Switch away -->
         <button mat-button color="warn" (click)="svc.switchToGoogleMode()">
           <mat-icon>cloud</mat-icon>

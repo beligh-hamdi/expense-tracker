@@ -200,6 +200,20 @@ export class SettingsService {
     await this.localFile.export();
   }
 
+  async resetAllData(): Promise<void> {
+    const ok = window.confirm(this.t('settings.reset_all_confirm'));
+    if (!ok) return;
+    await this.localFile.clearFile();
+    this.snack.open(this.t('settings.reset_all_done'), this.t('settings.ok'), { duration: 3000 });
+  }
+
+  async resetExpenses(): Promise<void> {
+    const ok = window.confirm(this.t('settings.reset_expenses_confirm'));
+    if (!ok) return;
+    await this.localFile.resetExpenses();
+    this.snack.open(this.t('settings.reset_expenses_done'), this.t('settings.ok'), { duration: 3000 });
+  }
+
   async switchToGoogleMode(): Promise<void> {
     this.sheetConfig.setDataMode('google');
     await this.localFile.clearFile();

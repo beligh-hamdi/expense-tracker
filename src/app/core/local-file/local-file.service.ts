@@ -424,8 +424,9 @@ export class LocalFileService {
     ]);
   }
 
-  // ── Clear ─────────────────────────────────────────────────────────────────
+  // ── Clear / Reset ─────────────────────────────────────────────────────────
 
+  /** Full reset: wipes expenses, categories, settings and all meta. */
   async clearFile(): Promise<void> {
     await Promise.all([
       this.idb.clearAll(),
@@ -437,5 +438,18 @@ export class LocalFileService {
     this._expensesFileName.set(null);
     this._categoriesFileName.set(null);
     this.sheetConfig.setLocalFileLoaded(false);
+  }
+
+  /** Reset only the expenses store; categories are untouched. */
+  async resetExpenses(): Promise<void> {
+    await Promise.all([
+      this.idb.clearExpenses(),
+      this.idb.deleteMeta(META_FILE_EXPENSES),
+    ]);
+    this._expenses.set([]);
+    this._expensesFileName.set(null);
+    if (this._categoriesFileName() === null) {
+      this.sheetConfig.setLocalFileLoaded(false);
+    }
   }
 }
