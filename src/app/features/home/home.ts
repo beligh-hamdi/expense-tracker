@@ -54,9 +54,6 @@ export class HomeComponent implements OnInit {
   ngOnInit(): void {
     if (this.auth.isAuthenticated()) {
       this.router.navigate(['/dashboard'], { replaceUrl: true });
-    } else if (this.sheetConfig.isLocalMode()) {
-      // Returning offline user — IDB data already restored, go straight to settings
-      this.router.navigate(['/settings'], { replaceUrl: true });
     }
   }
 
