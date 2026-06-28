@@ -7,6 +7,7 @@
   ![Material](https://img.shields.io/badge/Material_3-22-1565C0?logo=angular)
   ![PWA](https://img.shields.io/badge/PWA-ready-5A0FC8?logo=pwa)
   ![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20AR-orange)
+  ![version](https://img.shields.io/badge/version-0.1.0-blue)
   ![CI](https://github.com/beligh-hamdi/expense-tracker/actions/workflows/deploy.yml/badge.svg)
   ![License](https://img.shields.io/badge/license-MIT-green)
 </div>
@@ -27,14 +28,14 @@
 | **Expenses** | Add, edit, delete expenses with category, amount, date, and description |
 | **AI receipt scanning** | Upload or snap a receipt — Gemini Vision extracts merchant, amount, and date automatically. Falls back to Tesseract.js (offline OCR) if no API key is configured |
 | **Receipt zoom** | Click a receipt thumbnail to open a full-screen lightbox |
-| **AI insights** | Gemini 2.5 Flash analyses your spending patterns and returns a structured markdown report |
+| **AI insights** | Gemini 2.5 Flash analyses spending patterns and returns a structured report in the active app language (EN / FR / AR) |
 | **Categories** | Create and manage custom categories with Material 3 icons, M3 theme colors, and monthly budget limits |
-| **Google Sheets backend** | Your data lives in your own Google Spreadsheet — no proprietary database |
-| **Google OAuth** | Sign in with Google; PKCE + Web application client; token exchange via Cloudflare Worker proxy (secret never in the bundle) |
+| **Google Sheets backend** | Data lives in your own Google Spreadsheet — no proprietary database, no vendor lock-in |
+| **Google OAuth** | Sign in with Google; PKCE S256 + Web application client; `client_secret` never in the browser bundle (Cloudflare Worker proxy) |
 | **PWA** | Installable on desktop and mobile; works offline; iOS home screen supported with BroadcastChannel auth handoff |
 | **Dark / Light mode** | System-aware theme toggle with Material 3 color tokens |
-| **Multi-language** | English, French, Arabic (RTL) — language persisted in `localStorage` |
-| **App versioning** | Version auto-bumped on every push to `main` via conventional commits; displayed in Settings |
+| **Multi-language** | English, French, Arabic (RTL) — switchable at runtime, persisted in `localStorage` |
+| **Auto-versioning** | Version bumped on every push to `main` via conventional commits; displayed in Settings |
 
 ---
 
@@ -44,7 +45,7 @@
 - **[Angular Material 22](https://material.angular.io)** — Material Design 3 components and theming
 - **[Transloco](https://jsverse.github.io/transloco/)** — runtime i18n with lazy-loaded JSON files
 - **[Chart.js](https://www.chartjs.org)** — bar, line, and category charts themed with M3 color tokens
-- **[Google Gemini API](https://ai.google.dev)** — AI receipt scanning (Vision) and spending insights (`gemini-2.5-flash`)
+- **[Google Gemini API](https://ai.google.dev)** — AI receipt scanning (Vision) and multilingual spending insights (`gemini-2.5-flash`)
 - **[Tesseract.js](https://tesseract.projectnaptha.com)** — offline OCR fallback for receipt scanning
 - **[Google Sheets API v4](https://developers.google.com/sheets/api)** — data storage (`Expenses`, `Categories`, `Settings` tabs)
 - **[Angular Service Worker](https://angular.dev/ecosystem/service-workers)** — PWA & offline support
@@ -82,16 +83,16 @@ Browser                          Cloudflare Worker              Google
 
 When installed on the iOS home screen, the app runs in standalone mode with an isolated `localStorage`. A standard redirect to Google would lose the PKCE `code_verifier`. Instead:
 
-1. The PWA opens the Google auth URL in a new Safari tab (`window.open`)
+1. The PWA sets a `et_pwa_oauth` flag in `localStorage` and opens the Google auth URL in a new Safari tab
 2. Safari handles the OAuth flow; Google redirects to the callback URL
-3. The callback page broadcasts `{ code }` back via `BroadcastChannel`
-4. The PWA receives the code, finds `code_verifier` in its own `localStorage`, and completes the exchange via the Cloudflare Worker
+3. The callback page detects the flag, broadcasts `{ code }` back via `BroadcastChannel`, and closes itself
+4. The PWA receives the code, retrieves `code_verifier` from its own `localStorage`, and completes the exchange via the Cloudflare Worker
 
 ### OAuth scope
 
 Only `spreadsheets` is requested — the app never touches Drive files, Drive folders, Gmail, or any other Google service.
 
-> Google does not offer a per-file or per-folder Sheets scope. `spreadsheets` is the narrowest available scope that covers user-provided spreadsheets.
+> Google does not offer a per-file or per-folder Sheets scope. `spreadsheets` is the narrowest available scope for user-provided spreadsheets.
 
 ---
 
@@ -105,10 +106,10 @@ push to main
     ▼
 version  — reads commits since last tag; bumps by conventional commit type:
            BREAKING CHANGE / feat! → major  |  feat → minor  |  everything else → patch
-           commits [skip ci] and pushes the git tag
+           commits [skip ci] and pushes the new git tag
     │
     ▼
-build    — validates required secrets (fails fast with a clear error if any are missing)
+build    — validates required secrets (fails fast with a clear message if any are missing)
            injects version + secrets into environment files, builds Angular for production
     │
     ▼
@@ -127,14 +128,14 @@ Go to **Settings → Secrets and variables → Actions** in your fork and add:
 |---|---|---|
 | `GOOGLE_CLIENT_ID` | Yes | Web application OAuth 2.0 client ID |
 | `GOOGLE_REDIRECT_URI` | Yes | e.g. `https://your-username.github.io/expense-tracker/auth/callback` |
-| `TOKEN_PROXY_URL` | Yes | Cloudflare Worker URL e.g. `https://expense-tracker-token-proxy.YOUR-SUBDOMAIN.workers.dev/token` |
-| `SHEET_ID` | No | Default Google Spreadsheet ID (optional) |
+| `TOKEN_PROXY_URL` | Yes | Cloudflare Worker URL — e.g. `https://expense-tracker-token-proxy.YOUR-SUBDOMAIN.workers.dev/token` |
+| `SHEET_ID` | No | Default Google Spreadsheet ID pre-filled for all users (optional) |
 
-> `GOOGLE_CLIENT_SECRET` is **not** a GitHub secret. It lives exclusively as a Cloudflare Worker encrypted secret — set via `wrangler secret put GOOGLE_CLIENT_SECRET` inside `worker/`.
+> `GOOGLE_CLIENT_SECRET` is **not** a GitHub secret. It lives exclusively as an encrypted Cloudflare Worker secret — set it with `wrangler secret put GOOGLE_CLIENT_SECRET` inside `worker/`.
 
-> `AI_API_KEY` is **not** a CI secret. Each user enters their own Gemini key in **Settings → AI & Insights**; it is stored in their spreadsheet's `Settings` tab.
+> `AI_API_KEY` is **not** a CI secret. Each user enters their own Gemini key in **Settings → AI & Insights**; it is stored in their spreadsheet's `Settings` tab and synced to `localStorage` automatically on sign-in.
 
-If a required secret is missing the build fails immediately:
+If a required secret is missing the build fails immediately with a clear message:
 
 ```
 ──────────────────────────────────────────────
@@ -154,12 +155,12 @@ If a required secret is missing the build fails immediately:
 ### Prerequisites
 
 - Node.js 24+
-- A [Cloudflare account](https://dash.cloudflare.com/sign-up) (free)
+- A [Cloudflare account](https://dash.cloudflare.com/sign-up) (free tier is sufficient)
 - A Google Cloud project with:
   - **Google Sheets API** enabled
   - **OAuth consent screen** configured (External; add test user emails while in Testing mode)
   - **OAuth 2.0 credentials** — Application type: **Web application**
-- A free [Gemini API key](https://aistudio.google.com/app/apikey) — entered in the app, never in code
+- A free [Gemini API key](https://aistudio.google.com/app/apikey) — entered inside the app, never in code
 
 > The **Google Drive API does not need to be enabled** — the app only calls the Sheets API.
 
@@ -184,16 +185,14 @@ npm install
    - `https://your-username.github.io/expense-tracker/auth/callback`
 6. Copy the **Client ID** and **Client secret**
 
-> `client_secret` never goes into the Angular app — it goes only into the Cloudflare Worker (next step).
-
 ### 3. Deploy the Cloudflare Worker (token proxy)
 
-The worker keeps `client_secret` server-side. Do this once before running locally or deploying.
+The worker keeps `client_secret` server-side. Do this once before running locally or deploying to production.
 
 ```bash
 cd worker
 npm install
-npx wrangler login          # opens Cloudflare in your browser
+npx wrangler login        # opens Cloudflare in your browser
 ```
 
 Store secrets (Cloudflare encrypts these — they never appear in code or logs):
@@ -215,22 +214,23 @@ Cloudflare prints your worker URL:
 https://expense-tracker-token-proxy.YOUR-SUBDOMAIN.workers.dev
 ```
 
-Save this URL — you need it in step 4 and as a GitHub secret (`TOKEN_PROXY_URL`).
-
-> **Local dev:** `npx wrangler dev` starts the worker on `http://localhost:8787`. The local `environment.ts` already points there.
+Save this URL — you need it as `TOKEN_PROXY_URL` in both the local environment and GitHub secrets.
 
 ### 4. Configure the local environment
 
-Create `src/environments/environment.ts`:
+Create `src/environments/environment.ts` (gitignored — never committed):
 
 ```ts
 export const environment = {
   production: false,
   version: '0.0.0-dev',
   google: {
-    clientId:      'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+    clientId:      'YOUR_CLIENT_ID.apps.googleusercontent.com',
+    // Option A: run `npx wrangler dev` in worker/ — uses the proxy on :8787
+    tokenProxyUrl: 'http://localhost:8787/token',
+    // Option B: set clientSecret to skip wrangler dev and call Google directly
+    // clientSecret: 'YOUR_CLIENT_SECRET',
     redirectUri:   'http://localhost:4200/auth/callback',
-    tokenProxyUrl: 'http://localhost:8787/token', // wrangler dev
     scopes: [
       'https://www.googleapis.com/auth/spreadsheets',
       'profile',
@@ -245,15 +245,15 @@ export const environment = {
 };
 ```
 
-### 5. Run locally
-
-In one terminal — start the worker proxy:
-
+**Option A** — use the worker locally (mirrors production):
 ```bash
-cd worker && npx wrangler dev
+cd worker && npx wrangler dev   # starts on http://localhost:8787
 ```
 
-In another terminal — start Angular:
+**Option B** — skip the worker, call Google directly (simpler for dev):  
+Uncomment `clientSecret` in `environment.ts` and fill in your secret. No extra process needed.
+
+### 5. Run the dev server
 
 ```bash
 ng serve
@@ -267,7 +267,7 @@ Open `http://localhost:4200`.
 2. Go to **Settings → Google Sheet** — paste your Google Spreadsheet ID and click **Connect & Set Up**.
    The app creates `Expenses`, `Categories`, and `Settings` tabs and seeds default categories automatically.
 3. Go to **Settings → AI & Insights** — paste your Gemini API key and click **Save Key**.
-   It is stored in the `Settings` tab of your spreadsheet and synced to `localStorage` on future visits.
+   It is stored in the `Settings` tab of your spreadsheet and synced to `localStorage` on every future sign-in (including on new devices).
 
 ---
 
@@ -291,23 +291,22 @@ worker/
 src/
 ├── app/
 │   ├── core/
-│   │   ├── auth/           # Google OAuth (PKCE), BroadcastChannel iOS fix,
+│   │   ├── auth/           # Google OAuth (PKCE), BroadcastChannel iOS handoff,
 │   │   │                   # token interceptor, auth guard
-│   │   ├── google-sheets/  # Sheets API CRUD, SheetConfigService (spreadsheet ID + AI key)
+│   │   ├── google-sheets/  # Sheets API CRUD, SheetConfigService (spreadsheet ID + AI key sync)
 │   │   ├── i18n/           # LanguageService — RTL support, category name translation
 │   │   ├── ocr/            # OcrService — Gemini Vision + Tesseract.js fallback
 │   │   ├── pwa/            # PwaService — install prompt + update banner
-│   │   ├── sync/           # SyncService — periodic background refresh
 │   │   └── theme/          # ThemeService — light/dark toggle
 │   ├── features/
 │   │   ├── auth/           # Login page
 │   │   ├── categories/     # CategoriesService + list/form dialog
-│   │   ├── dashboard/      # DashboardService + page with Chart.js charts
+│   │   ├── dashboard/      # DashboardService + Chart.js charts
 │   │   ├── expenses/       # ExpensesService + table/form dialog + receipt scanning
-│   │   ├── insights/       # InsightsService (Gemini prompt + render) + AI insights page
+│   │   ├── insights/       # InsightsService — multilingual Gemini prompt + markdown render
 │   │   └── settings/       # SettingsService + spreadsheet / AI key / language / about cards
 │   ├── layout/
-│   │   └── shell/          # App shell — sidenav, toolbar, language switcher
+│   │   └── shell/          # App shell — sidenav, toolbar, language switcher, AI key sync
 │   └── shared/
 │       ├── components/     # Chart wrapper, ConfirmDialog
 │       ├── models/         # Expense, Category interfaces + Sheets row mappers
@@ -350,7 +349,7 @@ The app supports three languages switchable at runtime from the toolbar:
 
 LTR ↔ RTL switches trigger a full page reload so Angular Material's CDK `Directionality` re-initialises correctly. Same-direction switches (EN ↔ FR) hot-swap without a reload.
 
-The OCR receipt scanner automatically selects the matching Tesseract language model (`eng` / `fra` / `ara`) based on the active app language.
+The OCR receipt scanner automatically selects the matching Tesseract language model (`eng` / `fra` / `ara`) based on the active app language. AI insights are also generated in the active language — the Gemini prompt includes an explicit language instruction.
 
 ---
 
