@@ -249,7 +249,7 @@
     "local_file_hint": "ارفع ملف CSV لمزامنة النفقات أو الفئات. يتم اكتشاف نوع الملف تلقائياً من صف الرأس.",
     "local_file_upload": "رفع CSV",
     "load_sample_data": "تحميل بيانات نموذجية",
-    "sample_data_loaded": "تم تحميل البيانات النموذجية — 100 نفقة و7 فئات",
+    "sample_data_loaded": "تم تحميل البيانات النموذجية — 128 نفقة و7 فئات",
     "local_file_export_expenses": "تصدير النفقات (.csv)",
     "local_file_export_categories": "تصدير الفئات (.csv)",
     "local_file_template_hint": "تحميل القوالب:",
