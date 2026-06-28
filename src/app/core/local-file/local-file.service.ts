@@ -10,6 +10,34 @@ import { slugify } from '@shared/utils/crypto.util';
 import { SheetConfigService } from '@core/google-sheets/sheet-config.service';
 import { IdbService } from './idb.service';
 
+// ── Valid Material icon names (kept in sync with category-form) ───────────────
+
+const VALID_ICONS = new Set<string>([
+  // Food & Drink
+  'restaurant', 'local_cafe', 'local_bar', 'fastfood', 'lunch_dining',
+  'bakery_dining', 'local_grocery_store',
+  // Transport
+  'directions_car', 'directions_bus', 'local_taxi', 'train', 'flight',
+  'directions_bike', 'local_gas_station',
+  // Shopping
+  'shopping_bag', 'shopping_cart', 'storefront', 'checkroom', 'chair', 'devices',
+  // Health & Wellness
+  'favorite', 'local_hospital', 'fitness_center', 'spa', 'medical_services',
+  'pharmacy_medication',
+  // Entertainment
+  'movie', 'sports_esports', 'music_note', 'sports', 'theater_comedy', 'festival',
+  // Home & Utilities
+  'home', 'bolt', 'water_drop', 'wifi', 'phone_android', 'tv',
+  // Finance & Work
+  'work', 'school', 'account_balance', 'savings', 'credit_card', 'business_center',
+  // Other
+  'label', 'star', 'pets', 'child_care', 'volunteer_activism', 'more_horiz',
+]);
+
+function fixIcon(icon: string): string {
+  return VALID_ICONS.has(icon) ? icon : 'label';
+}
+
 const META_FILE_EXPENSES   = 'csvExpensesName';
 const META_FILE_CATEGORIES = 'csvCategoriesName';
 
@@ -129,11 +157,26 @@ export class LocalFileService {
   }
 
   private async loadCategoriesCsv(rows: string[][], name: string): Promise<void> {
-    const categories = rows.slice(1).filter((r) => r[0]).map(rowToCategory);
-    await this.idb.clearCategories();
-    await this.idb.putCategories(categories);
+    // Parse and fix icons from the CSV
+    const incoming: Category[] = rows
+      .slice(1)
+      .filter((r) => r[0])
+      .map((r) => ({ ...rowToCategory(r), icon: fixIcon(rowToCategory(r).icon) }));
+
+    // Merge: load existing IDB categories, upsert incoming ones (overwrite by id),
+    // keep any existing categories that are not in the CSV
+    const existing = await this.idb.getAllCategories();
+    const incomingMap = new Map(incoming.map((c) => [c.id, c]));
+    const merged: Category[] = [
+      // Keep existing categories not overwritten by the CSV
+      ...existing.filter((c) => !incomingMap.has(c.id)),
+      // Add/update all incoming categories
+      ...incoming,
+    ];
+
+    await this.idb.putCategories(merged);
     await this.idb.putMeta(META_FILE_CATEGORIES, name);
-    this._categories.set(categories);
+    this._categories.set(merged);
     this._categoriesFileName.set(name);
     this.sheetConfig.setLocalFileLoaded(true);
   }
