@@ -1,0 +1,153 @@
+<div class="home-page" *transloco="let t; prefix: 'home'">
+
+  <!-- ── Navbar ── -->
+  <header class="home-nav">
+    <div class="nav-brand">
+      <img src="icons/icon-96x96.png" width="32" height="32" alt="logo" />
+      <span>{{ t('app_name') }}</span>
+    </div>
+    <button mat-stroked-button (click)="signIn()">
+      <mat-icon>login</mat-icon>
+      {{ t('sign_in') }}
+    </button>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-content">
+      <mat-chip-set class="hero-badge">
+        <mat-chip>
+          <mat-icon matChipAvatar>auto_awesome</mat-icon>
+          {{ t('badge') }}
+        </mat-chip>
+      </mat-chip-set>
+
+      <h1 class="hero-title">{{ t('hero_title') }}</h1>
+      <p class="hero-subtitle">{{ t('hero_subtitle') }}</p>
+
+      <div class="hero-actions">
+        <button mat-raised-button color="primary" class="cta-btn" (click)="signIn()">
+          <img
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+            alt="Google"
+            width="20" height="20"
+          />
+          {{ t('cta_primary') }}
+        </button>
+        <a mat-stroked-button href="https://github.com/beligh-hamdi/expense-tracker" target="_blank" rel="noopener">
+          <mat-icon>code</mat-icon>
+          {{ t('cta_github') }}
+        </a>
+      </div>
+
+      <p class="hero-note">
+        <mat-icon class="note-icon">lock</mat-icon>
+        {{ t('hero_note') }}
+      </p>
+    </div>
+
+    <div class="hero-visual">
+      <div class="app-preview">
+        <div class="preview-bar">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="preview-url">expense-tracker.app</span>
+        </div>
+        <div class="preview-content">
+          <div class="preview-stat">
+            <mat-icon>trending_up</mat-icon>
+            <div>
+              <div class="stat-label">{{ t('preview_this_month') }}</div>
+              <div class="stat-value">$1,240</div>
+            </div>
+          </div>
+          <div class="preview-stat">
+            <mat-icon>savings</mat-icon>
+            <div>
+              <div class="stat-label">{{ t('preview_saved') }}</div>
+              <div class="stat-value">$380</div>
+            </div>
+          </div>
+          <div class="preview-stat">
+            <mat-icon>category</mat-icon>
+            <div>
+              <div class="stat-label">{{ t('preview_categories') }}</div>
+              <div class="stat-value">8</div>
+            </div>
+          </div>
+          <div class="preview-ai">
+            <mat-icon class="ai-icon">auto_awesome</mat-icon>
+            <p>{{ t('preview_ai_tip') }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ── -->
+  <section class="features">
+    <h2 class="section-title">{{ t('features_title') }}</h2>
+    <p class="section-subtitle">{{ t('features_subtitle') }}</p>
+
+    <div class="features-grid">
+      @for (f of features; track f.key) {
+        <div class="feature-card">
+          <div class="feature-icon">
+            <mat-icon>{{ f.icon }}</mat-icon>
+          </div>
+          <h3>{{ t('feature_' + f.key + '_title') }}</h3>
+          <p>{{ t('feature_' + f.key + '_desc') }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ── How it works ── -->
+  <section class="how-it-works">
+    <h2 class="section-title">{{ t('how_title') }}</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>{{ t('step1_title') }}</h3>
+        <p>{{ t('step1_desc') }}</p>
+      </div>
+      <div class="step-arrow"><mat-icon>arrow_forward</mat-icon></div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>{{ t('step2_title') }}</h3>
+        <p>{{ t('step2_desc') }}</p>
+      </div>
+      <div class="step-arrow"><mat-icon>arrow_forward</mat-icon></div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>{{ t('step3_title') }}</h3>
+        <p>{{ t('step3_desc') }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA banner ── -->
+  <section class="cta-banner">
+    <h2>{{ t('cta_banner_title') }}</h2>
+    <p>{{ t('cta_banner_subtitle') }}</p>
+    <button mat-raised-button color="primary" class="cta-btn" (click)="signIn()">
+      <img
+        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+        alt="Google"
+        width="20" height="20"
+      />
+      {{ t('cta_primary') }}
+    </button>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="home-footer">
+    <span>© {{ year }} Expense Tracker AI — {{ t('footer_open_source') }}</span>
+    <a href="https://github.com/beligh-hamdi/expense-tracker" target="_blank" rel="noopener">
+      <mat-icon>code</mat-icon> GitHub
+    </a>
+  </footer>
+
+</div>
