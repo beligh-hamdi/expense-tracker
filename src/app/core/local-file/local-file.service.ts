@@ -6,7 +6,6 @@ import {
   Category, rowToCategory, categoryToRow, CATEGORY_COLUMNS,
   DEFAULT_CATEGORIES,
 } from '@shared/models/category.model';
-import { resolveMatToken } from '@shared/utils/mat-colors.util';
 import { slugify } from '@shared/utils/crypto.util';
 import { SheetConfigService } from '@core/google-sheets/sheet-config.service';
 import { IdbService } from './idb.service';
@@ -210,15 +209,33 @@ export class LocalFileService {
   // ── Template download ─────────────────────────────────────────────────────
 
   downloadExpensesTemplate(): void {
-    downloadCsv(toCsv([[...EXPENSE_COLUMNS]]), 'expenses-template.csv');
+    // Header + one blank sample row so the user knows what to fill in
+    const rows: string[][] = [
+      [...EXPENSE_COLUMNS],
+      ['', 'YYYY-MM-DD', '0.00', '', '', '', ''],
+    ];
+    downloadCsv(toCsv(rows), 'expenses-template.csv');
   }
 
   downloadCategoriesTemplate(): void {
+    // Header + default categories with plain literal hex colors (no CSS token lookup)
+    const CATEGORY_COLORS: Record<string, string> = {
+      'Food & Dining':  '#ef5350',
+      'Transport':      '#42a5f5',
+      'Shopping':       '#ab47bc',
+      'Entertainment':  '#ec407a',
+      'Health':         '#26a69a',
+      'Utilities':      '#78909c',
+      'Other':          '#607d8b',
+    };
     const rows: string[][] = [[...CATEGORY_COLUMNS]];
     for (const c of DEFAULT_CATEGORIES) {
-      const color = resolveMatToken(c.colorToken) || '#607d8b';
       rows.push(categoryToRow({
-        id: slugify(c.name), name: c.name, color, budgetLimit: 0, icon: c.icon,
+        id:          slugify(c.name),
+        name:        c.name,
+        color:       CATEGORY_COLORS[c.name] ?? '#607d8b',
+        budgetLimit: 0,
+        icon:        c.icon,
       }));
     }
     downloadCsv(toCsv(rows), 'categories-template.csv');
