@@ -138,6 +138,72 @@ mat-card-actions {
   letter-spacing: 0.02em;
 }
 
+// ── Push-to-Google-Sheets panel ───────────────────────────────────────────────
+
+.push-panel {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-small);
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--mat-sys-surface-container-low);
+}
+
+.push-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--mat-sys-on-surface);
+
+  mat-icon {
+    color: var(--mat-sys-primary);
+    font-size: 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+}
+
+.push-panel-desc {
+  margin: 0;
+  font-size: 0.825rem;
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.5;
+}
+
+.push-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.825rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--mat-sys-corner-extra-small);
+  flex-wrap: wrap;
+
+  mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  }
+
+  &--warn {
+    background: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+
+    mat-icon { color: var(--mat-sys-error); }
+  }
+
+  &--ok {
+    background: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+
+    mat-icon { color: var(--mat-sys-tertiary); }
+  }
+}
+
 .sync-timestamp {
   display: flex;
   align-items: center;

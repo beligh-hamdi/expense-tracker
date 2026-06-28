@@ -16,6 +16,38 @@
       }
       <p class="hint">{{ t('settings.local_file_hint') }}</p>
 
+      <!-- Sync-to-Google info panel (local mode only) -->
+      @if (svc.sheetConfig.isLocalMode()) {
+        <div class="push-panel">
+          <div class="push-panel-header">
+            <mat-icon>cloud_upload</mat-icon>
+            <span>{{ t('settings.push_panel_title') }}</span>
+          </div>
+          <p class="push-panel-desc">{{ t('settings.push_panel_desc') }}</p>
+
+          @if (!svc.auth.isAuthenticated()) {
+            <!-- Step 1: not signed in -->
+            <div class="push-step push-step--warn">
+              <mat-icon>login</mat-icon>
+              {{ t('settings.push_step_sign_in') }}
+            </div>
+          } @else if (!svc.sheetConfig.spreadsheetId()) {
+            <!-- Step 2: signed in but no sheet configured -->
+            <div class="push-step push-step--warn">
+              <mat-icon>table_chart</mat-icon>
+              {{ t('settings.push_step_connect_sheet') }}
+            </div>
+          } @else {
+            <!-- Ready -->
+            <div class="push-step push-step--ok">
+              <mat-icon>check_circle</mat-icon>
+              {{ t('settings.push_step_ready') }}
+              <code class="sheet-id-chip">{{ svc.sheetConfig.spreadsheetId() }}</code>
+            </div>
+          }
+        </div>
+      }
+
       <!-- Hidden file input -->
       <input #fileInput type="file" accept=".xlsx,.csv"
         style="display:none"
@@ -37,6 +69,14 @@
         <button mat-button color="warn" (click)="svc.switchToGoogleMode()">
           <mat-icon>cloud</mat-icon>
           {{ t('settings.switch_to_google') }}
+        </button>
+      }
+      @if (svc.sheetConfig.isLocalMode() && svc.auth.isAuthenticated() && svc.sheetConfig.spreadsheetId()) {
+        <button mat-raised-button color="accent"
+          [disabled]="svc.pushing()"
+          (click)="svc.pushOfflineDataToSheet()">
+          @if (svc.pushing()) { <mat-spinner diameter="18" /> } @else { <mat-icon>cloud_upload</mat-icon> }
+          {{ t('settings.push_to_sheets') }}
         </button>
       }
 

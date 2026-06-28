@@ -145,7 +145,9 @@ export class SettingsService {
   // ── Local file mode ────────────────────────────────────────────────────────
 
   private readonly _fileUploading = signal(false);
+  private readonly _pushing       = signal(false);
   readonly fileUploading = this._fileUploading.asReadonly();
+  readonly pushing       = this._pushing.asReadonly();
 
   async loadLocalFile(file: File): Promise<void> {
     this._fileUploading.set(true);
@@ -180,6 +182,47 @@ export class SettingsService {
     this.sheetConfig.setDataMode('google');
     await this.localFile.clearFile();
     this.snack.open(this.t('settings.switched_to_google'), this.t('settings.ok'), { duration: 3000 });
+  }
+
+  /**
+   * Pushes all offline (IndexedDB) data to the connected Google Sheet,
+   * then switches to Google mode and clears the local IndexedDB store.
+   *
+   * Requires a spreadsheet to be configured AND Google authentication.
+   */
+  async pushOfflineDataToSheet(): Promise<void> {
+    if (!this.sheetConfig.spreadsheetId()) return;
+    this._pushing.set(true);
+    try {
+      const expenses   = this.localFile.expenses();
+      const categories = this.localFile.categories();
+
+      // Write offline data to Google Sheets (overwrites existing rows)
+      await this.sheets.pushToSheet(expenses, categories);
+
+      // Switch mode to google and clear local IDB store
+      this.sheetConfig.setDataMode('google');
+      await this.localFile.clearFile();
+
+      // Reload from sheet to refresh in-memory signals
+      await Promise.all([
+        this.expensesSvc.loadAll(),
+        this.categoriesSvc.load(),
+      ]);
+
+      this.snack.open(
+        this.t('settings.push_success')
+          .replace('{exps}', String(expenses.length))
+          .replace('{cats}', String(categories.length)),
+        this.t('settings.ok'),
+        { duration: 5000 },
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : this.t('settings.push_failed');
+      this.snack.open(msg, this.t('settings.dismiss'), { duration: 6000 });
+    } finally {
+      this._pushing.set(false);
+    }
   }
 
   downloadTemplate(): void {

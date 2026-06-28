@@ -234,6 +234,60 @@ export class GoogleSheetsService {
     await this.clearRowById(SHEET_TABS.categories, id, 5);
   }
 
+  // ── Bulk push (offline → Google Sheets) ───────────────────────────────────
+
+  /**
+   * Overwrites the Expenses and Categories tabs with the provided data.
+   *
+   * Steps:
+   *  1. Ensure all three tabs exist (creates them if missing).
+   *  2. Clear the existing data rows in Expenses and Categories (keep headers).
+   *  3. Bulk-append all rows via values:batchUpdate.
+   *
+   * This is used when pushing offline (IndexedDB) data to Google Sheets.
+   */
+  async pushToSheet(expenses: Expense[], categories: Category[]): Promise<void> {
+    // 1. Ensure tabs + headers exist
+    await this.ensureSheetTabs();
+
+    // 2. Clear data rows (row 2 onwards) — clear a wide range so old data is gone
+    const clearRanges = [
+      `${SHEET_TABS.expenses}!A2:Z10000`,
+      `${SHEET_TABS.categories}!A2:Z10000`,
+    ];
+    await firstValueFrom(
+      this.http.post(
+        `${this.baseUrl}/${this.spreadsheetId}/values:batchClear`,
+        { ranges: clearRanges }
+      )
+    );
+
+    // 3. Write new data in one batchUpdate call
+    const data: { range: string; values: string[][] }[] = [];
+
+    if (expenses.length > 0) {
+      data.push({
+        range: `${SHEET_TABS.expenses}!A2`,
+        values: expenses.map(expenseToRow),
+      });
+    }
+    if (categories.length > 0) {
+      data.push({
+        range: `${SHEET_TABS.categories}!A2`,
+        values: categories.map(categoryToRow),
+      });
+    }
+
+    if (data.length > 0) {
+      await firstValueFrom(
+        this.http.post(
+          `${this.baseUrl}/${this.spreadsheetId}/values:batchUpdate`,
+          { valueInputOption: 'RAW', data }
+        )
+      );
+    }
+  }
+
   // ── ID migration ───────────────────────────────────────────────────────────
 
   /**
