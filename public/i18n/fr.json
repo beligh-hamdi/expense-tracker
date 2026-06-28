@@ -39,7 +39,10 @@
     "step3_desc": "Ajoutez des dépenses manuellement ou scannez un reçu. Les analyses IA sont à portée de main.",
     "cta_banner_title": "Vos finances, sous contrôle",
     "cta_banner_subtitle": "Gratuit, open source, et vos données vous appartiennent.",
-    "footer_open_source": "Gratuit et open source"
+    "footer_open_source": "Gratuit et open source",
+    "dark_mode_on": "Passer en mode sombre",
+    "dark_mode_off": "Passer en mode clair",
+    "switch_language": "Changer de langue"
   },
   "login": {
     "app_title": "Expense Tracker AI",

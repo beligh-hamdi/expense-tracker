@@ -1,15 +1,19 @@
 import { Component, inject, OnInit } from '@angular/core';
+import { UpperCasePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoModule } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
 import { ThemeService } from '@core/theme/theme.service';
+import { LanguageService } from '@core/i18n/language.service';
 
 @Component({
   selector: 'app-home',
-  imports: [MatButtonModule, MatIconModule, MatChipsModule, TranslocoModule],
+  imports: [UpperCasePipe, MatButtonModule, MatIconModule, MatChipsModule, MatMenuModule, MatTooltipModule, TranslocoModule],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -17,6 +21,7 @@ export class HomeComponent implements OnInit {
   private readonly auth   = inject(AuthService);
   private readonly router = inject(Router);
   readonly theme          = inject(ThemeService);
+  readonly lang           = inject(LanguageService);
 
   readonly year = new Date().getFullYear();
 

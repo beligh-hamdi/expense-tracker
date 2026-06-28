@@ -27,7 +27,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
+  padding: 0.75rem 2rem;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -41,6 +41,39 @@
   gap: 0.75rem;
   font-size: 1.1rem;
   font-weight: 700;
+  color: var(--mat-sys-primary);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+// Language menu — mirrors shell styles
+.lang-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 1.25rem;
+  border-radius: 4px;
+  background: var(--mat-sys-surface-variant);
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-inline-end: 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.lang-active {
+  background: var(--mat-sys-primary-container);
+}
+
+.lang-check {
+  margin-inline-start: auto;
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
   color: var(--mat-sys-primary);
 }
 

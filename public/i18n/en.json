@@ -39,7 +39,10 @@
     "step3_desc": "Add expenses manually or scan a receipt. AI insights are one tap away.",
     "cta_banner_title": "Your finances, under control",
     "cta_banner_subtitle": "Free, open source, and your data stays yours.",
-    "footer_open_source": "Free & open source"
+    "footer_open_source": "Free & open source",
+    "dark_mode_on": "Switch to dark mode",
+    "dark_mode_off": "Switch to light mode",
+    "switch_language": "Switch language"
   },
   "login": {
     "app_title": "Expense Tracker AI",
