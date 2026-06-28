@@ -32,8 +32,15 @@
         }
       </mat-menu>
 
+      <!-- Offline pill -->
+      <button mat-stroked-button class="offline-btn" (click)="useOffline()"
+        [matTooltip]="t('offline_tooltip')">
+        <mat-icon>wifi_off</mat-icon>
+        {{ t('use_offline') }}
+      </button>
+
       <!-- Sign in -->
-      <button mat-stroked-button (click)="signIn()">
+      <button mat-raised-button color="primary" (click)="signIn()">
         <mat-icon>login</mat-icon>
         {{ t('sign_in') }}
       </button>
@@ -53,19 +60,41 @@
       <h1 class="hero-title">{{ t('hero_title') }}</h1>
       <p class="hero-subtitle">{{ t('hero_subtitle') }}</p>
 
-      <div class="hero-actions">
-        <button mat-raised-button color="primary" class="cta-btn" (click)="signIn()">
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt="Google"
-            width="20" height="20"
-          />
-          {{ t('cta_primary') }}
-        </button>
-        <a mat-stroked-button href="https://github.com/beligh-hamdi/expense-tracker" target="_blank" rel="noopener">
-          <mat-icon>code</mat-icon>
-          {{ t('cta_github') }}
-        </a>
+      <!-- Two-mode CTA -->
+      <div class="hero-modes">
+        <!-- Google mode -->
+        <div class="mode-card mode-google">
+          <div class="mode-card-header">
+            <mat-icon>cloud</mat-icon>
+            <span>{{ t('mode_google_label') }}</span>
+          </div>
+          <p class="mode-card-desc">{{ t('mode_google_desc') }}</p>
+          <button mat-raised-button color="primary" class="cta-btn" (click)="signIn()">
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="Google" width="18" height="18" />
+            {{ t('cta_primary') }}
+          </button>
+        </div>
+
+        <div class="mode-divider">
+          <mat-divider [vertical]="true" />
+          <span class="or-label">{{ t('or') }}</span>
+          <mat-divider [vertical]="true" />
+        </div>
+
+        <!-- Offline mode -->
+        <div class="mode-card mode-offline">
+          <div class="mode-card-header">
+            <mat-icon>wifi_off</mat-icon>
+            <span>{{ t('mode_offline_label') }}</span>
+          </div>
+          <p class="mode-card-desc">{{ t('mode_offline_desc') }}</p>
+          <button mat-stroked-button class="cta-btn" (click)="useOffline()">
+            <mat-icon>upload_file</mat-icon>
+            {{ t('cta_offline') }}
+          </button>
+        </div>
       </div>
 
       <p class="hero-note">
@@ -119,7 +148,7 @@
     <p class="section-subtitle">{{ t('features_subtitle') }}</p>
 
     <div class="features-grid">
-      @for (f of features; track f.key) {
+      @for (f of googleFeatures; track f.key) {
         <div class="feature-card">
           <div class="feature-icon">
             <mat-icon>{{ f.icon }}</mat-icon>
@@ -131,27 +160,132 @@
     </div>
   </section>
 
+  <!-- ── Offline section ── -->
+  <section class="offline-section">
+    <div class="offline-section-inner">
+      <div class="offline-section-text">
+        <div class="offline-badge">
+          <mat-icon>wifi_off</mat-icon>
+          {{ t('offline_badge') }}
+        </div>
+        <h2 class="section-title" style="text-align:left">{{ t('offline_title') }}</h2>
+        <p class="section-subtitle" style="text-align:left;margin-inline:0">{{ t('offline_subtitle') }}</p>
+
+        <div class="offline-features-list">
+          @for (f of offlineFeatures; track f.key) {
+            <div class="offline-feature-item">
+              <div class="offline-feature-icon">
+                <mat-icon>{{ f.icon }}</mat-icon>
+              </div>
+              <div>
+                <div class="offline-feature-title">{{ t('offline_feature_' + f.key + '_title') }}</div>
+                <div class="offline-feature-desc">{{ t('offline_feature_' + f.key + '_desc') }}</div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <button mat-raised-button class="cta-btn offline-cta" (click)="useOffline()">
+          <mat-icon>upload_file</mat-icon>
+          {{ t('cta_offline') }}
+        </button>
+      </div>
+
+      <div class="offline-visual">
+        <div class="offline-card">
+          <div class="offline-card-row">
+            <mat-icon>insert_drive_file</mat-icon>
+            <span>expense-tracker.xlsx</span>
+            <span class="offline-card-badge">{{ t('offline_loaded') }}</span>
+          </div>
+          <mat-divider />
+          <div class="offline-card-stat">
+            <span class="offline-card-label">{{ t('offline_expenses_count') }}</span>
+            <span class="offline-card-value">128</span>
+          </div>
+          <div class="offline-card-stat">
+            <span class="offline-card-label">{{ t('offline_categories_count') }}</span>
+            <span class="offline-card-value">7</span>
+          </div>
+          <div class="offline-card-stat">
+            <span class="offline-card-label">{{ t('offline_storage') }}</span>
+            <span class="offline-card-value">IndexedDB</span>
+          </div>
+          <mat-divider />
+          <div class="offline-card-actions">
+            <button mat-stroked-button disabled>
+              <mat-icon>upload_file</mat-icon>
+              {{ t('offline_upload') }}
+            </button>
+            <button mat-stroked-button disabled>
+              <mat-icon>download</mat-icon>
+              {{ t('offline_export') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── How it works ── -->
   <section class="how-it-works">
     <h2 class="section-title">{{ t('how_title') }}</h2>
 
-    <div class="steps">
-      <div class="step">
-        <div class="step-number">1</div>
-        <h3>{{ t('step1_title') }}</h3>
-        <p>{{ t('step1_desc') }}</p>
+    <div class="how-paths">
+      <!-- Google path -->
+      <div class="how-path">
+        <div class="how-path-label">
+          <mat-icon>cloud</mat-icon>
+          {{ t('mode_google_label') }}
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <h3>{{ t('step1_title') }}</h3>
+            <p>{{ t('step1_desc') }}</p>
+          </div>
+          <div class="step-arrow"><mat-icon>arrow_forward</mat-icon></div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3>{{ t('step2_title') }}</h3>
+            <p>{{ t('step2_desc') }}</p>
+          </div>
+          <div class="step-arrow"><mat-icon>arrow_forward</mat-icon></div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3>{{ t('step3_title') }}</h3>
+            <p>{{ t('step3_desc') }}</p>
+          </div>
+        </div>
       </div>
-      <div class="step-arrow"><mat-icon>arrow_forward</mat-icon></div>
-      <div class="step">
-        <div class="step-number">2</div>
-        <h3>{{ t('step2_title') }}</h3>
-        <p>{{ t('step2_desc') }}</p>
-      </div>
-      <div class="step-arrow"><mat-icon>arrow_forward</mat-icon></div>
-      <div class="step">
-        <div class="step-number">3</div>
-        <h3>{{ t('step3_title') }}</h3>
-        <p>{{ t('step3_desc') }}</p>
+
+      <mat-divider />
+
+      <!-- Offline path -->
+      <div class="how-path">
+        <div class="how-path-label how-path-label--offline">
+          <mat-icon>wifi_off</mat-icon>
+          {{ t('mode_offline_label') }}
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-number step-number--offline">1</div>
+            <h3>{{ t('offline_step1_title') }}</h3>
+            <p>{{ t('offline_step1_desc') }}</p>
+          </div>
+          <div class="step-arrow"><mat-icon>arrow_forward</mat-icon></div>
+          <div class="step">
+            <div class="step-number step-number--offline">2</div>
+            <h3>{{ t('offline_step2_title') }}</h3>
+            <p>{{ t('offline_step2_desc') }}</p>
+          </div>
+          <div class="step-arrow"><mat-icon>arrow_forward</mat-icon></div>
+          <div class="step">
+            <div class="step-number step-number--offline">3</div>
+            <h3>{{ t('offline_step3_title') }}</h3>
+            <p>{{ t('offline_step3_desc') }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -160,14 +294,18 @@
   <section class="cta-banner">
     <h2>{{ t('cta_banner_title') }}</h2>
     <p>{{ t('cta_banner_subtitle') }}</p>
-    <button mat-raised-button color="primary" class="cta-btn" (click)="signIn()">
-      <img
-        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-        alt="Google"
-        width="20" height="20"
-      />
-      {{ t('cta_primary') }}
-    </button>
+    <div class="cta-banner-actions">
+      <button mat-raised-button color="primary" class="cta-btn" (click)="signIn()">
+        <img
+          src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+          alt="Google" width="20" height="20" />
+        {{ t('cta_primary') }}
+      </button>
+      <button mat-stroked-button class="cta-btn" (click)="useOffline()">
+        <mat-icon>wifi_off</mat-icon>
+        {{ t('cta_offline') }}
+      </button>
+    </div>
   </section>
 
   <!-- ── Footer ── -->
