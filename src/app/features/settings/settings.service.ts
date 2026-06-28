@@ -107,18 +107,31 @@ export class SettingsService {
     }
   }
 
-  // ── Sync ───────────────────────────────────────────────────────────────────
+  // ── Sync & migrate ─────────────────────────────────────────────────────────
 
   async syncData(): Promise<void> {
     if (!this.sheetConfig.isConfigured()) return;
     this._syncing.set(true);
     try {
+      // 1. Migrate legacy UUID category IDs → slugs (idempotent if already done)
+      const migrated = await this.sheets.migrateIds();
+
+      // 2. Reload fresh data from the sheet
       await Promise.all([
         this.expensesSvc.loadAll(),
         this.categoriesSvc.load(),
       ]);
+
       this._lastSynced.set(new Date());
-      this.snack.open(this.t('settings.sync_success'), this.t('settings.ok'), { duration: 3000 });
+
+      // 3. Show result — mention migration if anything was changed
+      const msg = migrated.categories > 0
+        ? this.t('settings.sync_migrated')
+            .replace('{cats}', String(migrated.categories))
+            .replace('{exps}', String(migrated.expenses))
+        : this.t('settings.sync_success');
+
+      this.snack.open(msg, this.t('settings.ok'), { duration: 5000 });
     } catch (err) {
       const msg = err instanceof Error ? err.message : this.t('settings.sync_failed');
       this.snack.open(msg, this.t('settings.dismiss'), { duration: 6000 });

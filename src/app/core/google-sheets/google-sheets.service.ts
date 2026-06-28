@@ -234,6 +234,121 @@ export class GoogleSheetsService {
     await this.clearRowById(SHEET_TABS.categories, id, 5);
   }
 
+  // ── ID migration ───────────────────────────────────────────────────────────
+
+  /**
+   * Migrates legacy UUID-based category IDs to human-readable slugs.
+   *
+   * Algorithm:
+   *  1. Fetch all categories and expenses from the sheet.
+   *  2. For each category whose id matches the UUID pattern, compute a slug
+   *     from its name. If the slug collides with an existing id, append -2,
+   *     -3, … until unique.
+   *  3. Write the updated category rows back in a single batchUpdate.
+   *  4. For each expense whose categoryId appears in the old→new map, write
+   *     the updated expense row back (also batched).
+   *
+   * Categories that already have slug IDs are skipped (idempotent).
+   * Returns the number of categories and expenses that were updated.
+   */
+  async migrateIds(): Promise<{ categories: number; expenses: number }> {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    const [categories, expenses] = await Promise.all([
+      this.getCategories(),
+      this.getExpenses(),
+    ]);
+
+    // ── Step 1: build old→new ID map for UUID categories ────────────────────
+    const idMap = new Map<string, string>(); // oldId → newId
+    const usedIds = new Set(categories.map((c) => c.id));
+
+    for (const cat of categories) {
+      if (!UUID_RE.test(cat.id)) continue; // already a slug — skip
+
+      let slug = slugify(cat.name);
+      // Avoid collision with existing IDs (including already-computed new ones)
+      if (usedIds.has(slug) && slug !== cat.id) {
+        let n = 2;
+        while (usedIds.has(`${slug}-${n}`)) n++;
+        slug = `${slug}-${n}`;
+      }
+      usedIds.delete(cat.id); // free old UUID
+      usedIds.add(slug);      // reserve new slug
+      idMap.set(cat.id, slug);
+    }
+
+    if (idMap.size === 0) return { categories: 0, expenses: 0 };
+
+    // ── Step 2: fetch raw category rows to get sheet row numbers ─────────────
+    const catRes = await firstValueFrom(
+      this.http.get<ValuesResponse>(
+        `${this.baseUrl}/${this.spreadsheetId}/values/${encodeURIComponent(SHEET_TABS.categories + '!A:E')}`
+      )
+    );
+    const catRawRows = catRes.values ?? [];
+
+    // Build batchUpdate data for categories
+    const catValueRanges: { range: string; values: string[][] }[] = [];
+    catRawRows.forEach((row, i) => {
+      if (i === 0) return; // skip header
+      const oldId = row[0];
+      const newId = idMap.get(oldId);
+      if (!newId) return;
+      const sheetRow = i + 1;
+      const updatedRow = [...row];
+      updatedRow[0] = newId;
+      catValueRanges.push({
+        range: `${SHEET_TABS.categories}!A${sheetRow}:E${sheetRow}`,
+        values: [updatedRow],
+      });
+    });
+
+    // ── Step 3: patch expense rows whose categoryId changed ──────────────────
+    const expRes = await firstValueFrom(
+      this.http.get<ValuesResponse>(
+        `${this.baseUrl}/${this.spreadsheetId}/values/${encodeURIComponent(SHEET_TABS.expenses + '!A:G')}`
+      )
+    );
+    const expRawRows = expRes.values ?? [];
+
+    const expValueRanges: { range: string; values: string[][] }[] = [];
+    expRawRows.forEach((row, i) => {
+      if (i === 0) return; // skip header
+      const oldCatId = row[3]; // column D = categoryId
+      const newCatId = idMap.get(oldCatId);
+      if (!newCatId) return;
+      const sheetRow = i + 1;
+      const updatedRow = [...row];
+      updatedRow[3] = newCatId;
+      expValueRanges.push({
+        range: `${SHEET_TABS.expenses}!A${sheetRow}:G${sheetRow}`,
+        values: [updatedRow],
+      });
+    });
+
+    // ── Step 4: write everything in batch requests ───────────────────────────
+    if (catValueRanges.length > 0) {
+      await firstValueFrom(
+        this.http.post(
+          `${this.baseUrl}/${this.spreadsheetId}/values:batchUpdate`,
+          { valueInputOption: 'RAW', data: catValueRanges }
+        )
+      );
+    }
+
+    if (expValueRanges.length > 0) {
+      await firstValueFrom(
+        this.http.post(
+          `${this.baseUrl}/${this.spreadsheetId}/values:batchUpdate`,
+          { valueInputOption: 'RAW', data: expValueRanges }
+        )
+      );
+    }
+
+    return { categories: catValueRanges.length, expenses: expValueRanges.length };
+  }
+
   // ── Settings ───────────────────────────────────────────────────────────────
 
   async getSetting(key: string): Promise<string | null> {

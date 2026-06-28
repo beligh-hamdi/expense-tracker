@@ -229,6 +229,7 @@
     "disconnect": "Disconnect",
     "sync_now": "Sync now",
     "sync_success": "Data synced from spreadsheet",
+    "sync_migrated": "Migrated {cats} categories and updated {exps} expenses — data reloaded",
     "sync_failed": "Sync failed — please try again",
     "last_synced": "Last synced at",
     "account_title": "Account",

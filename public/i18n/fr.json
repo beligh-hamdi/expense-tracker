@@ -229,6 +229,7 @@
     "disconnect": "Déconnecter",
     "sync_now": "Synchroniser",
     "sync_success": "Données synchronisées depuis la feuille de calcul",
+    "sync_migrated": "{cats} catégories migrées et {exps} dépenses mises à jour — données rechargées",
     "sync_failed": "La synchronisation a échoué — veuillez réessayer",
     "last_synced": "Dernière sync à",
     "account_title": "Compte",
