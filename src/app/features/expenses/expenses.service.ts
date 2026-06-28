@@ -79,7 +79,7 @@ export class ExpensesService {
 
   async add(expense: Expense): Promise<void> {
     if (this.sheetConfig.isLocalMode()) {
-      this.localFile.addExpense(expense);
+      await this.localFile.addExpense(expense);
     } else {
       await this.sheets.addExpense(expense);
       this._expenses.update((list) => [expense, ...list]);
@@ -89,7 +89,7 @@ export class ExpensesService {
 
   async update(updated: Expense): Promise<void> {
     if (this.sheetConfig.isLocalMode()) {
-      this.localFile.updateExpense(updated);
+      await this.localFile.updateExpense(updated);
     } else {
       await this.sheets.updateExpense(updated);
       this._expenses.update((list) => list.map((e) => (e.id === updated.id ? updated : e)));
@@ -99,7 +99,7 @@ export class ExpensesService {
 
   async delete(id: string): Promise<void> {
     if (this.sheetConfig.isLocalMode()) {
-      this.localFile.deleteExpense(id);
+      await this.localFile.deleteExpense(id);
     } else {
       await this.sheets.deleteExpense(id);
       this._expenses.update((list) => list.filter((e) => e.id !== id));

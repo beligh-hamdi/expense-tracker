@@ -4,6 +4,7 @@ import {
   isDevMode,
   Service,
   inject,
+  APP_INITIALIZER,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -12,6 +13,8 @@ import { provideTransloco, TranslocoLoader } from '@jsverse/transloco';
 
 import { routes } from './app.routes';
 import { tokenInterceptor } from '@core/auth/token.interceptor';
+import { LocalFileService } from '@core/local-file/local-file.service';
+import { SheetConfigService } from '@core/google-sheets/sheet-config.service';
 
 @Service()
 export class TranslocoHttpLoader implements TranslocoLoader {
@@ -21,9 +24,19 @@ export class TranslocoHttpLoader implements TranslocoLoader {
   }
 }
 
+function initLocalFile(localFile: LocalFileService, sheetConfig: SheetConfigService) {
+  return () => sheetConfig.isLocalMode() ? localFile.restoreFromIdb() : Promise.resolve();
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (lf: LocalFileService, sc: SheetConfigService) => initLocalFile(lf, sc),
+      deps: [LocalFileService, SheetConfigService],
+      multi: true,
+    },
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([tokenInterceptor])),
     provideServiceWorker('ngsw-worker.js', {

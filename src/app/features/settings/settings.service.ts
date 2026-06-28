@@ -153,7 +153,7 @@ export class SettingsService {
       this.sheetConfig.setDataMode('local');
       await this.localFile.load(file);
       // Sync AI key if present in the file's Settings tab
-      const key = this.localFile.getSetting('gemini_api_key');
+      const key = await this.localFile.getSetting('gemini_api_key');
       if (key) {
         this.sheetConfig.setAiApiKey(key);
         this.aiApiKeyInput.set(key);
@@ -171,14 +171,14 @@ export class SettingsService {
     }
   }
 
-  exportLocalFile(): void {
+  async exportLocalFile(): Promise<void> {
     const name = this.localFile.fileName() ?? 'expense-tracker';
-    this.localFile.export(name);
+    await this.localFile.export(name);
   }
 
-  switchToGoogleMode(): void {
+  async switchToGoogleMode(): Promise<void> {
     this.sheetConfig.setDataMode('google');
-    this.localFile.clearFile();
+    await this.localFile.clearFile();
     this.snack.open(this.t('settings.switched_to_google'), this.t('settings.ok'), { duration: 3000 });
   }
 

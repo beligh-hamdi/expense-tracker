@@ -54,8 +54,7 @@ export class CategoriesService {
 
   async add(cat: Category): Promise<void> {
     if (this.sheetConfig.isLocalMode()) {
-      this.localFile.addCategory(cat);
-      this._categories.update((list) => [...list, cat]);
+      await this.localFile.addCategory(cat);
     } else {
       await this.sheets.addCategory(cat);
       this._categories.update((list) => [...list, cat]);
@@ -65,8 +64,7 @@ export class CategoriesService {
 
   async update(updated: Category): Promise<void> {
     if (this.sheetConfig.isLocalMode()) {
-      this.localFile.updateCategory(updated);
-      this._categories.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+      await this.localFile.updateCategory(updated);
     } else {
       await this.sheets.updateCategory(updated);
       this._categories.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
@@ -76,8 +74,7 @@ export class CategoriesService {
 
   async delete(id: string): Promise<void> {
     if (this.sheetConfig.isLocalMode()) {
-      this.localFile.deleteCategory(id);
-      this._categories.update((list) => list.filter((c) => c.id !== id));
+      await this.localFile.deleteCategory(id);
     } else {
       await this.sheets.deleteCategory(id);
       this._categories.update((list) => list.filter((c) => c.id !== id));

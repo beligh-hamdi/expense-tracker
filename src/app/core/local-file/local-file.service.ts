@@ -10,6 +10,7 @@ import {
 import { resolveMatToken } from '@shared/utils/mat-colors.util';
 import { slugify } from '@shared/utils/crypto.util';
 import { SheetConfigService } from '@core/google-sheets/sheet-config.service';
+import { IdbService } from './idb.service';
 
 const TAB = {
   expenses:   'Expenses',
@@ -17,95 +18,130 @@ const TAB = {
   settings:   'Settings',
 } as const;
 
-const STORAGE_KEY = 'et_local_file_name';
+const META_FILE_NAME = 'fileName';
 
-export interface LocalData {
-  expenses:   Expense[];
-  categories: Category[];
-  settings:   Map<string, string>;
-}
+// ── Service ───────────────────────────────────────────────────────────────────
 
 @Service()
 export class LocalFileService {
+  private readonly idb         = inject(IdbService);
   private readonly sheetConfig = inject(SheetConfigService);
 
-  // ── State ─────────────────────────────────────────────────────────────────
+  // ── Reactive signals (in-memory view of IndexedDB) ────────────────────────
 
-  private readonly _fileName    = signal<string | null>(localStorage.getItem(STORAGE_KEY));
-  private readonly _expenses    = signal<Expense[]>([]);
-  private readonly _categories  = signal<Category[]>([]);
-  private readonly _settings    = new Map<string, string>();
+  private readonly _fileName   = signal<string | null>(null);
+  private readonly _expenses   = signal<Expense[]>([]);
+  private readonly _categories = signal<Category[]>([]);
 
   readonly fileName   = this._fileName.asReadonly();
   readonly expenses   = this._expenses.asReadonly();
   readonly categories = this._categories.asReadonly();
 
+  // ── Initialise from IndexedDB on startup ──────────────────────────────────
+
+  /**
+   * Called once at boot (by LocalFileSyncService via APP_INITIALIZER).
+   * Restores the last session's data from IndexedDB if local mode was active.
+   */
+  async restoreFromIdb(): Promise<void> {
+    const name = await this.idb.getMeta(META_FILE_NAME);
+    if (!name) return; // No local file was ever saved
+
+    const [expenses, categories] = await Promise.all([
+      this.idb.getAllExpenses(),
+      this.idb.getAllCategories(),
+    ]);
+
+    this._fileName.set(name);
+    this._expenses.set(expenses.sort((a, b) => b.date.localeCompare(a.date)));
+    this._categories.set(categories);
+    this.sheetConfig.setLocalFileLoaded(true);
+  }
+
   // ── Upload ────────────────────────────────────────────────────────────────
 
   /**
-   * Parse an uploaded .xlsx or .csv File and load its data into memory.
-   * Returns the parsed data so callers can react immediately.
+   * Parses an uploaded .xlsx or .csv File, persists every row to IndexedDB,
+   * and refreshes the in-memory signals.
    */
-  async load(file: File): Promise<LocalData> {
-    const buffer = await file.arrayBuffer();
+  async load(file: File): Promise<void> {
+    const buffer   = await file.arrayBuffer();
     const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
 
-    const expenses   = this.readTab<Expense>(workbook,   TAB.expenses,   rowToExpense);
-    const categories = this.readTab<Category>(workbook,  TAB.categories, rowToCategory);
+    const expenses   = this.readTab<Expense>(workbook,  TAB.expenses,   rowToExpense);
+    const categories = this.readTab<Category>(workbook, TAB.categories, rowToCategory);
     const settings   = this.readSettings(workbook);
 
+    // Persist everything to IndexedDB
+    await Promise.all([
+      this.idb.clearAll(),
+      this.idb.putMeta(META_FILE_NAME, file.name),
+    ]);
+    await Promise.all([
+      this.idb.putExpenses(expenses),
+      this.idb.putCategories(categories),
+      ...Array.from(settings.entries()).map(([k, v]) => this.idb.putSetting(k, v)),
+    ]);
+
+    // Update signals
     this._expenses.set(expenses.sort((a, b) => b.date.localeCompare(a.date)));
     this._categories.set(categories);
-    this._settings.clear();
-    settings.forEach((v, k) => this._settings.set(k, v));
     this._fileName.set(file.name);
-    localStorage.setItem(STORAGE_KEY, file.name);
     this.sheetConfig.setLocalFileLoaded(true);
-
-    return { expenses, categories, settings };
   }
 
-  // ── In-memory CRUD ────────────────────────────────────────────────────────
+  // ── Expenses CRUD (mutates signal + IDB) ──────────────────────────────────
 
-  addExpense(e: Expense): void {
+  async addExpense(e: Expense): Promise<void> {
+    await this.idb.putExpense(e);
     this._expenses.update((list) => [e, ...list]);
   }
 
-  updateExpense(updated: Expense): void {
+  async updateExpense(updated: Expense): Promise<void> {
+    await this.idb.putExpense(updated);
     this._expenses.update((list) => list.map((e) => (e.id === updated.id ? updated : e)));
   }
 
-  deleteExpense(id: string): void {
+  async deleteExpense(id: string): Promise<void> {
+    await this.idb.deleteExpense(id);
     this._expenses.update((list) => list.filter((e) => e.id !== id));
   }
 
-  addCategory(c: Category): void {
+  // ── Categories CRUD (mutates signal + IDB) ────────────────────────────────
+
+  async addCategory(c: Category): Promise<void> {
+    await this.idb.putCategory(c);
     this._categories.update((list) => [...list, c]);
   }
 
-  updateCategory(updated: Category): void {
+  async updateCategory(updated: Category): Promise<void> {
+    await this.idb.putCategory(updated);
     this._categories.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
   }
 
-  deleteCategory(id: string): void {
+  async deleteCategory(id: string): Promise<void> {
+    await this.idb.deleteCategory(id);
     this._categories.update((list) => list.filter((c) => c.id !== id));
   }
 
-  getSetting(key: string): string | null {
-    return this._settings.get(key) ?? null;
+  // ── Settings ──────────────────────────────────────────────────────────────
+
+  async getSetting(key: string): Promise<string | null> {
+    return this.idb.getSetting(key);
   }
 
-  setSetting(key: string, value: string): void {
-    this._settings.set(key, value);
+  async setSetting(key: string, value: string): Promise<void> {
+    await this.idb.putSetting(key, value);
   }
 
   // ── Export ────────────────────────────────────────────────────────────────
 
   /**
-   * Serialises the current in-memory state back to an .xlsx file and
-   * triggers a browser download.
+   * Serialises the current in-memory state to an .xlsx file and triggers
+   * a browser download.
    */
-  export(fileName = 'expense-tracker.xlsx'): void {
+  async export(fileName = 'expense-tracker.xlsx'): Promise<void> {
+    const settings = await this.idb.getAllSettings();
     const wb = XLSX.utils.book_new();
 
     // Expenses tab
@@ -124,7 +160,7 @@ export class LocalFileService {
 
     // Settings tab
     const settingsRows: string[][] = [['key', 'value']];
-    this._settings.forEach((v, k) => settingsRows.push([k, v]));
+    settings.forEach((v, k) => settingsRows.push([k, v]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(settingsRows), TAB.settings);
 
     XLSX.writeFile(wb, fileName.endsWith('.xlsx') ? fileName : fileName + '.xlsx');
@@ -132,35 +168,27 @@ export class LocalFileService {
 
   // ── Template download ─────────────────────────────────────────────────────
 
-  /**
-   * Generates and downloads a blank template .xlsx file pre-populated with
-   * headers and the 7 default categories.
-   */
   downloadTemplate(): void {
     const wb = XLSX.utils.book_new();
 
-    // Expenses — header only
+    // Expenses — headers only
     XLSX.utils.book_append_sheet(
       wb,
       XLSX.utils.aoa_to_sheet([[...EXPENSE_COLUMNS]]),
       TAB.expenses,
     );
 
-    // Categories — header + default categories
+    // Categories — headers + default categories
     const catRows: string[][] = [[...CATEGORY_COLUMNS]];
     for (const c of DEFAULT_CATEGORIES) {
       const color = resolveMatToken(c.colorToken) || '#607d8b';
       catRows.push(categoryToRow({
-        id:          slugify(c.name),
-        name:        c.name,
-        color,
-        budgetLimit: 0,
-        icon:        c.icon,
+        id: slugify(c.name), name: c.name, color, budgetLimit: 0, icon: c.icon,
       }));
     }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(catRows), TAB.categories);
 
-    // Settings — header only
+    // Settings — headers only
     XLSX.utils.book_append_sheet(
       wb,
       XLSX.utils.aoa_to_sheet([['key', 'value']]),
@@ -170,16 +198,20 @@ export class LocalFileService {
     XLSX.writeFile(wb, 'expense-tracker-template.xlsx');
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // ── Clear ─────────────────────────────────────────────────────────────────
 
-  clearFile(): void {
+  async clearFile(): Promise<void> {
+    await Promise.all([
+      this.idb.clearAll(),
+      this.idb.deleteMeta(META_FILE_NAME),
+    ]);
     this._expenses.set([]);
     this._categories.set([]);
-    this._settings.clear();
     this._fileName.set(null);
-    localStorage.removeItem(STORAGE_KEY);
     this.sheetConfig.setLocalFileLoaded(false);
   }
+
+  // ── Private helpers ───────────────────────────────────────────────────────
 
   private readTab<T>(
     wb: XLSX.WorkBook,
@@ -194,7 +226,7 @@ export class LocalFileService {
 
   private readSettings(wb: XLSX.WorkBook): Map<string, string> {
     const map = new Map<string, string>();
-    const ws = wb.Sheets[TAB.settings];
+    const ws  = wb.Sheets[TAB.settings];
     if (!ws) return map;
     const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
     rows.slice(1).forEach((r) => {
