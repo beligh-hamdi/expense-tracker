@@ -35,6 +35,8 @@ export interface DashboardStats {
   categoryBreakdown: CategorySummary[];
   dailyThisMonth: DailyPoint[];
   totalAllTime: number;
+  totalThisYear: number;
+  countThisYear: number;
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -68,14 +70,18 @@ export class DashboardService {
     const thisMonth = monthKey(now);
     const lastMonth = monthKey(new Date(now.getFullYear(), now.getMonth() - 1));
 
+    const thisYear  = String(now.getFullYear());
     const thisMonthExp = expenses.filter((e) => e.date.startsWith(thisMonth));
     const lastMonthExp = expenses.filter((e) => e.date.startsWith(lastMonth));
+    const thisYearExp  = expenses.filter((e) => e.date.startsWith(thisYear));
 
     const totalThisMonth = sum(thisMonthExp);
     const totalLastMonth = sum(lastMonthExp);
     const countThisMonth = thisMonthExp.length;
     const avgPerDay      = totalThisMonth / Math.max(1, now.getDate());
     const totalAllTime   = sum(expenses);
+    const totalThisYear  = sum(thisYearExp);
+    const countThisYear  = thisYearExp.length;
 
     // Category breakdown (this month, sorted descending)
     const byCat: Record<string, number> = {};
@@ -112,7 +118,8 @@ export class DashboardService {
     return {
       totalThisMonth, totalLastMonth, countThisMonth,
       avgPerDay, topCategory, monthOverMonth,
-      categoryBreakdown, dailyThisMonth, totalAllTime,
+      categoryBreakdown, dailyThisMonth,
+      totalAllTime, totalThisYear, countThisYear,
     };
   }
 }

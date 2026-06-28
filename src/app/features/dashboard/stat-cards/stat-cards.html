@@ -43,15 +43,27 @@
         </div>
       </mat-card>
 
-      <mat-card class="stat-card">
+      <mat-card class="stat-card stat-card--total">
         <div class="stat-icon-wrap surface-variant">
           <mat-icon class="on-surface-variant">trending_up</mat-icon>
         </div>
         <div class="stat-body">
-          <div class="stat-value">{{ stats().totalAllTime | currency }}</div>
-          <div class="stat-label">{{ t('dashboard.all_time_total') }}</div>
-          <div class="stat-sub">{{ expenseCount() }} {{ t('dashboard.expenses_total') }}</div>
+          <div class="stat-value">{{ displayTotal() | currency }}</div>
+          <div class="stat-label">
+            @if (totalFilter() === 'year') {
+              {{ t('dashboard.total_this_year') }}
+            } @else {
+              {{ t('dashboard.all_time_total') }}
+            }
+          </div>
+          <div class="stat-sub">{{ displayCount() }} {{ t('dashboard.expenses_total') }}</div>
         </div>
+        <mat-button-toggle-group class="total-toggle"
+          [value]="totalFilter()"
+          (change)="setFilter($event.value)">
+          <mat-button-toggle value="year">{{ t('dashboard.filter_year') }}</mat-button-toggle>
+          <mat-button-toggle value="all">{{ t('dashboard.filter_all') }}</mat-button-toggle>
+        </mat-button-toggle-group>
       </mat-card>
 
     </div>
