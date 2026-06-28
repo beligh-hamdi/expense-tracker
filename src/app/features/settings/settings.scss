@@ -137,3 +137,19 @@ mat-card-actions {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+
+.sync-timestamp {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.sync-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--mat-sys-tertiary);
+}

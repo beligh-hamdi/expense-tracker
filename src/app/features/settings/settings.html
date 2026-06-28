@@ -47,12 +47,24 @@
         {{ svc.sheetConfig.isConfigured() ? t('settings.reconnect') : t('settings.connect_setup') }}
       </button>
       @if (svc.sheetConfig.isConfigured()) {
+        <button mat-raised-button
+          [disabled]="svc.syncing()"
+          (click)="svc.syncData()">
+          @if (svc.syncing()) { <mat-spinner diameter="18" /> } @else { <mat-icon>sync</mat-icon> }
+          {{ t('settings.sync_now') }}
+        </button>
         <button mat-button color="warn" (click)="svc.disconnectSheet()">
           <mat-icon>link_off</mat-icon>
           {{ t('settings.disconnect') }}
         </button>
       }
     </mat-card-actions>
+    @if (svc.lastSynced()) {
+      <div class="sync-timestamp">
+        <mat-icon class="sync-icon">check_circle</mat-icon>
+        {{ t('settings.last_synced') }} {{ svc.lastSynced() | date:'HH:mm:ss' }}
+      </div>
+    }
   </mat-card>
 
   <mat-divider />

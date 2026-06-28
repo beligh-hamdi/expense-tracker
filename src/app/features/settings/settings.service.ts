@@ -6,6 +6,8 @@ import { GoogleSheetsService } from '@core/google-sheets/google-sheets.service';
 import { AuthService } from '@core/auth/auth.service';
 import { LanguageService } from '@core/i18n/language.service';
 import { APP_VERSION } from '@core/version/version.token';
+import { ExpensesService } from '@features/expenses/expenses.service';
+import { CategoriesService } from '@features/categories/categories.service';
 
 const SHEET_KEY_AI = 'gemini_api_key';
 
@@ -18,16 +20,22 @@ export class SettingsService {
   private readonly sheets    = inject(GoogleSheetsService);
   private readonly snack     = inject(MatSnackBar);
   private readonly transloco = inject(TranslocoService);
+  private readonly expensesSvc    = inject(ExpensesService);
+  private readonly categoriesSvc  = inject(CategoriesService);
 
   // ── Private writable state ─────────────────────────────────────────────────
 
   private readonly _loading    = signal(false);
   private readonly _savingKey  = signal(false);
+  private readonly _syncing    = signal(false);
+  private readonly _lastSynced = signal<Date | null>(null);
 
   // ── Public signals ─────────────────────────────────────────────────────────
 
   readonly loading            = this._loading.asReadonly();
   readonly savingKey          = this._savingKey.asReadonly();
+  readonly syncing            = this._syncing.asReadonly();
+  readonly lastSynced         = this._lastSynced.asReadonly();
   readonly spreadsheetIdInput = signal(this.sheetConfig.spreadsheetId() ?? ''); // writable: two-way binding
   readonly aiApiKeyInput      = signal(this.sheetConfig.aiApiKey() ?? '');       // writable: two-way binding
 
@@ -96,6 +104,26 @@ export class SettingsService {
       }
     } catch {
       // Non-fatal — user can enter the key manually
+    }
+  }
+
+  // ── Sync ───────────────────────────────────────────────────────────────────
+
+  async syncData(): Promise<void> {
+    if (!this.sheetConfig.isConfigured()) return;
+    this._syncing.set(true);
+    try {
+      await Promise.all([
+        this.expensesSvc.loadAll(),
+        this.categoriesSvc.load(),
+      ]);
+      this._lastSynced.set(new Date());
+      this.snack.open(this.t('settings.sync_success'), this.t('settings.ok'), { duration: 3000 });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : this.t('settings.sync_failed');
+      this.snack.open(msg, this.t('settings.dismiss'), { duration: 6000 });
+    } finally {
+      this._syncing.set(false);
     }
   }
 

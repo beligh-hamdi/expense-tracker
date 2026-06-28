@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,6 +15,7 @@ import { SettingsService } from './settings.service';
 @Component({
   selector: 'app-settings',
   imports: [
+    DatePipe,
     FormsModule,
     TranslocoModule,
     MatCardModule,
