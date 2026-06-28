@@ -43,12 +43,112 @@ const META_FILE_CATEGORIES = 'csvCategoriesName';
 
 // ── CSV helpers ───────────────────────────────────────────────────────────────
 
-/** Parse a CSV string → array of string[] rows (skips blank lines). */
+/**
+ * RFC-4180 compliant CSV parser.
+ * Also handles:
+ *   - Tab-delimited files (Excel copy-paste / TSV)
+ *   - Quoted fields containing commas, quotes, or newlines
+ *   - CRLF and LF line endings
+ * Returns rows as trimmed string arrays, skipping fully blank lines.
+ */
 function parseCsv(text: string): string[][] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.split(',').map((cell) => cell.trim()))
-    .filter((row) => row.some((c) => c !== ''));
+  // Detect delimiter: if the first line has more tabs than commas → TSV
+  const firstLine = text.split(/\r?\n/)[0] ?? '';
+  const delim = (firstLine.match(/\t/g) ?? []).length >
+                (firstLine.match(/,/g)  ?? []).length ? '\t' : ',';
+
+  const rows: string[][] = [];
+  let row: string[]  = [];
+  let cell           = '';
+  let inQuotes       = false;
+  let i              = 0;
+
+  while (i < text.length) {
+    const ch   = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"' && next === '"') {
+        cell += '"'; i += 2;            // escaped quote ""
+      } else if (ch === '"') {
+        inQuotes = false; i++;          // closing quote
+      } else {
+        cell += ch; i++;
+      }
+    } else if (ch === '"') {
+      inQuotes = true; i++;
+    } else if (ch === delim) {
+      row.push(cell.trim()); cell = ''; i++;
+    } else if (ch === '\r' && next === '\n') {
+      row.push(cell.trim()); rows.push(row); row = []; cell = ''; i += 2;
+    } else if (ch === '\n') {
+      row.push(cell.trim()); rows.push(row); row = []; cell = ''; i++;
+    } else {
+      cell += ch; i++;
+    }
+  }
+  // Last cell / row
+  row.push(cell.trim());
+  if (row.some((c) => c !== '')) rows.push(row);
+
+  return rows.filter((r) => r.some((c) => c !== ''));
+}
+
+/**
+ * Normalise any recognisable date string to YYYY-MM-DD.
+ * Handles: YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY, ISO timestamps,
+ *          Excel serial numbers (number of days since 1899-12-30).
+ */
+function normaliseDate(raw: string): string {
+  if (!raw) return '';
+  const s = raw.trim();
+
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+  // ISO timestamp: 2024-01-15T12:30:00Z or similar — take the date part
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
+
+  // DD/MM/YYYY or DD-MM-YYYY
+  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmy) {
+    const [, d, m, y] = dmy;
+    // If day > 12 it must be DD/MM, otherwise assume DD/MM (European default)
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
+  // MM/DD/YYYY — only if first number ≤ 12 and second > 12 (unambiguous)
+  const mdy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (mdy && Number(mdy[1]) <= 12 && Number(mdy[2]) > 12) {
+    const [, m, d, y] = mdy;
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
+  // Excel serial number (plain integer, e.g. 45678)
+  const serial = Number(s);
+  if (!isNaN(serial) && serial > 1 && serial < 100000) {
+    const ms = (serial - 25569) * 86400 * 1000; // Excel epoch → Unix ms
+    const d  = new Date(ms);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().slice(0, 10);
+    }
+  }
+
+  // Fallback: let Date parse it and extract YYYY-MM-DD
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+
+  return s; // give up — keep as-is so the row isn't silently dropped
+}
+
+/**
+ * Normalise createdAt to a valid ISO timestamp string.
+ * Falls back to today's ISO string if the value is missing or unparseable.
+ */
+function normaliseCreatedAt(raw: string): string {
+  if (!raw) return new Date().toISOString();
+  const d = new Date(raw.trim());
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
 }
 
 /** Serialise rows to a CSV string. Values with commas/quotes are quoted. */
@@ -147,7 +247,14 @@ export class LocalFileService {
   }
 
   private async loadExpensesCsv(rows: string[][], name: string): Promise<void> {
-    const expenses = rows.slice(1).filter((r) => r[0]).map(rowToExpense);
+    const expenses = rows.slice(1).filter((r) => r[0]).map((r) => {
+      const e = rowToExpense(r);
+      return {
+        ...e,
+        date:      normaliseDate(e.date),
+        createdAt: normaliseCreatedAt(e.createdAt),
+      };
+    });
     await this.idb.clearExpenses();
     await this.idb.putExpenses(expenses);
     await this.idb.putMeta(META_FILE_EXPENSES, name);
