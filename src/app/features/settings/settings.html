@@ -79,6 +79,14 @@
         {{ t('settings.local_file_upload') }}
       </button>
 
+      <!-- Load sample data -->
+      <button mat-stroked-button
+        [disabled]="svc.fileUploading()"
+        (click)="svc.loadSampleData()">
+        @if (svc.fileUploading()) { <mat-spinner diameter="18" /> } @else { <mat-icon>dataset</mat-icon> }
+        {{ t('settings.load_sample_data') }}
+      </button>
+
       @if (svc.sheetConfig.isLocalMode()) {
         <!-- Export -->
         <button mat-stroked-button (click)="svc.exportExpenses()">

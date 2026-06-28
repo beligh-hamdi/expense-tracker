@@ -248,6 +248,8 @@
     "local_file_subtitle": "Upload a CSV file — no login, no internet required",
     "local_file_hint": "Upload a CSV file to sync expenses or categories. The file type is detected automatically from the header row.",
     "local_file_upload": "Upload CSV",
+    "load_sample_data": "Load sample data",
+    "sample_data_loaded": "Sample data loaded — 100 expenses & 7 categories",
     "local_file_export_expenses": "Export expenses (.csv)",
     "local_file_export_categories": "Export categories (.csv)",
     "local_file_template_hint": "Download templates:",

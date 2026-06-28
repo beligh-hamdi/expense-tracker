@@ -149,6 +149,20 @@ export class SettingsService {
   readonly fileUploading = this._fileUploading.asReadonly();
   readonly pushing       = this._pushing.asReadonly();
 
+  async loadSampleData(): Promise<void> {
+    this._fileUploading.set(true);
+    try {
+      this.sheetConfig.setDataMode('local');
+      await this.localFile.loadSampleData();
+      this.snack.open(this.t('settings.sample_data_loaded'), this.t('settings.ok'), { duration: 4000 });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : this.t('settings.local_file_error');
+      this.snack.open(msg, this.t('settings.dismiss'), { duration: 6000 });
+    } finally {
+      this._fileUploading.set(false);
+    }
+  }
+
   async loadLocalFile(file: File): Promise<void> {
     this._fileUploading.set(true);
     try {

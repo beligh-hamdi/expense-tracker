@@ -1,0 +1,8 @@
+id,name,color,budgetLimit,icon
+food-dining,Food & Dining,#ef5350,600,restaurant
+transport,Transport,#42a5f5,200,directions_car
+shopping,Shopping,#ab47bc,400,shopping_bag
+entertainment,Entertainment,#ec407a,150,movie
+health,Health,#26a69a,300,favorite
+utilities,Utilities,#78909c,250,bolt
+other,Other,#607d8b,0,label

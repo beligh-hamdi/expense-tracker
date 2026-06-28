@@ -248,6 +248,8 @@
     "local_file_subtitle": "Importez un fichier CSV — sans connexion ni internet",
     "local_file_hint": "Importez un fichier CSV pour synchroniser vos dépenses ou catégories. Le type est détecté automatiquement à partir de l'en-tête.",
     "local_file_upload": "Importer CSV",
+    "load_sample_data": "Charger les données exemple",
+    "sample_data_loaded": "Données exemple chargées — 100 dépenses & 7 catégories",
     "local_file_export_expenses": "Exporter dépenses (.csv)",
     "local_file_export_categories": "Exporter catégories (.csv)",
     "local_file_template_hint": "Télécharger les modèles :",

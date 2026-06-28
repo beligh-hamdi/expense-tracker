@@ -397,6 +397,33 @@ export class LocalFileService {
     this.downloadCategoriesTemplate();
   }
 
+  // ── Sample data ───────────────────────────────────────────────────────────
+
+  /**
+   * Fetches the bundled sample CSVs from /sample-data/ and loads them,
+   * replacing any existing expenses and merging categories.
+   */
+  async loadSampleData(base = 'sample-data'): Promise<void> {
+    const [expText, catText] = await Promise.all([
+      fetch(`${base}/expenses.csv`).then((r) => {
+        if (!r.ok) throw new Error(`Failed to fetch ${base}/expenses.csv`);
+        return r.text();
+      }),
+      fetch(`${base}/categories.csv`).then((r) => {
+        if (!r.ok) throw new Error(`Failed to fetch ${base}/categories.csv`);
+        return r.text();
+      }),
+    ]);
+
+    const expRows = parseCsv(expText);
+    const catRows = parseCsv(catText);
+
+    await Promise.all([
+      this.loadExpensesCsv(expRows,  'sample-expenses.csv'),
+      this.loadCategoriesCsv(catRows, 'sample-categories.csv'),
+    ]);
+  }
+
   // ── Clear ─────────────────────────────────────────────────────────────────
 
   async clearFile(): Promise<void> {
