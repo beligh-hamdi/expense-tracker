@@ -138,6 +138,49 @@ mat-card-actions {
   letter-spacing: 0.02em;
 }
 
+// ── CSV status badges ─────────────────────────────────────────────────────────
+
+.csv-badges {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.csv-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--mat-sys-corner-small);
+  font-size: 0.825rem;
+  border: 1px dashed var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface-variant);
+  flex: 1;
+  min-width: 160px;
+
+  mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+
+  &--loaded {
+    border-style: solid;
+    background: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+    border-color: transparent;
+
+    mat-icon { color: var(--mat-sys-tertiary); }
+  }
+}
+
+// ── Template row ──────────────────────────────────────────────────────────────
+
+.template-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  padding: 0.25rem 0.5rem 0.75rem;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
 // ── Push-to-Google-Sheets panel ───────────────────────────────────────────────
 
 .push-panel {

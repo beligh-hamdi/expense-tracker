@@ -1,5 +1,4 @@
 import { Service, signal, inject } from '@angular/core';
-import * as XLSX from 'xlsx';
 import {
   Expense, rowToExpense, expenseToRow, EXPENSE_COLUMNS,
 } from '@shared/models/expense.model';
@@ -12,13 +11,45 @@ import { slugify } from '@shared/utils/crypto.util';
 import { SheetConfigService } from '@core/google-sheets/sheet-config.service';
 import { IdbService } from './idb.service';
 
-const TAB = {
-  expenses:   'Expenses',
-  categories: 'Categories',
-  settings:   'Settings',
-} as const;
+const META_FILE_EXPENSES   = 'csvExpensesName';
+const META_FILE_CATEGORIES = 'csvCategoriesName';
 
-const META_FILE_NAME = 'fileName';
+// ── CSV helpers ───────────────────────────────────────────────────────────────
+
+/** Parse a CSV string → array of string[] rows (skips blank lines). */
+function parseCsv(text: string): string[][] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.split(',').map((cell) => cell.trim()))
+    .filter((row) => row.some((c) => c !== ''));
+}
+
+/** Serialise rows to a CSV string. Values with commas/quotes are quoted. */
+function toCsv(rows: string[][]): string {
+  return rows
+    .map((row) =>
+      row
+        .map((cell) => {
+          const s = String(cell ?? '');
+          return s.includes(',') || s.includes('"') || s.includes('\n')
+            ? `"${s.replace(/"/g, '""')}"`
+            : s;
+        })
+        .join(',')
+    )
+    .join('\n');
+}
+
+/** Trigger a browser download of a UTF-8 text file. */
+function downloadCsv(content: string, fileName: string): void {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
@@ -29,30 +60,30 @@ export class LocalFileService {
 
   // ── Reactive signals (in-memory view of IndexedDB) ────────────────────────
 
-  private readonly _fileName   = signal<string | null>(null);
-  private readonly _expenses   = signal<Expense[]>([]);
-  private readonly _categories = signal<Category[]>([]);
+  private readonly _expensesFileName   = signal<string | null>(null);
+  private readonly _categoriesFileName = signal<string | null>(null);
+  private readonly _expenses           = signal<Expense[]>([]);
+  private readonly _categories         = signal<Category[]>([]);
 
-  readonly fileName   = this._fileName.asReadonly();
+  /** Kept for backwards-compat (Settings UI shows a single file name badge). */
+  readonly fileName   = this._expensesFileName.asReadonly();
   readonly expenses   = this._expenses.asReadonly();
   readonly categories = this._categories.asReadonly();
 
   // ── Initialise from IndexedDB on startup ──────────────────────────────────
 
-  /**
-   * Called once at boot (by LocalFileSyncService via APP_INITIALIZER).
-   * Restores the last session's data from IndexedDB if local mode was active.
-   */
   async restoreFromIdb(): Promise<void> {
-    const name = await this.idb.getMeta(META_FILE_NAME);
-    if (!name) return; // No local file was ever saved
-
-    const [expenses, categories] = await Promise.all([
+    const [eName, cName, expenses, categories] = await Promise.all([
+      this.idb.getMeta(META_FILE_EXPENSES),
+      this.idb.getMeta(META_FILE_CATEGORIES),
       this.idb.getAllExpenses(),
       this.idb.getAllCategories(),
     ]);
 
-    this._fileName.set(name);
+    if (!eName && !cName) return; // nothing was ever saved
+
+    this._expensesFileName.set(eName);
+    this._categoriesFileName.set(cName);
     this._expenses.set(expenses.sort((a, b) => b.date.localeCompare(a.date)));
     this._categories.set(categories);
     this.sheetConfig.setLocalFileLoaded(true);
@@ -61,32 +92,50 @@ export class LocalFileService {
   // ── Upload ────────────────────────────────────────────────────────────────
 
   /**
-   * Parses an uploaded .xlsx or .csv File, persists every row to IndexedDB,
-   * and refreshes the in-memory signals.
+   * Load a CSV file. The file type is auto-detected by its header row:
+   *   - If first column header is 'id' and second is 'date'  → Expenses CSV
+   *   - If first column header is 'id' and second is 'name'  → Categories CSV
+   *
+   * Uploading either file independently is fine — the other dataset is
+   * kept as-is in IndexedDB/signals.
    */
   async load(file: File): Promise<void> {
-    const buffer   = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+    const text = await file.text();
+    const rows = parseCsv(text);
+    if (rows.length < 1) throw new Error('Empty CSV file');
 
-    const expenses   = this.readTab<Expense>(workbook,  TAB.expenses,   rowToExpense);
-    const categories = this.readTab<Category>(workbook, TAB.categories, rowToCategory);
-    const settings   = this.readSettings(workbook);
+    const header = rows[0].map((h) => h.toLowerCase());
 
-    // Persist everything to IndexedDB
-    await Promise.all([
-      this.idb.clearAll(),
-      this.idb.putMeta(META_FILE_NAME, file.name),
-    ]);
-    await Promise.all([
-      this.idb.putExpenses(expenses),
-      this.idb.putCategories(categories),
-      ...Array.from(settings.entries()).map(([k, v]) => this.idb.putSetting(k, v)),
-    ]);
+    if (header[0] === 'id' && header[1] === 'date') {
+      // Expenses CSV
+      await this.loadExpensesCsv(rows, file.name);
+    } else if (header[0] === 'id' && header[1] === 'name') {
+      // Categories CSV
+      await this.loadCategoriesCsv(rows, file.name);
+    } else {
+      throw new Error(
+        'Unrecognised CSV format. Expected header row starting with "id,date" (expenses) or "id,name" (categories).'
+      );
+    }
+  }
 
-    // Update signals
+  private async loadExpensesCsv(rows: string[][], name: string): Promise<void> {
+    const expenses = rows.slice(1).filter((r) => r[0]).map(rowToExpense);
+    await this.idb.clearExpenses();
+    await this.idb.putExpenses(expenses);
+    await this.idb.putMeta(META_FILE_EXPENSES, name);
     this._expenses.set(expenses.sort((a, b) => b.date.localeCompare(a.date)));
+    this._expensesFileName.set(name);
+    this.sheetConfig.setLocalFileLoaded(true);
+  }
+
+  private async loadCategoriesCsv(rows: string[][], name: string): Promise<void> {
+    const categories = rows.slice(1).filter((r) => r[0]).map(rowToCategory);
+    await this.idb.clearCategories();
+    await this.idb.putCategories(categories);
+    await this.idb.putMeta(META_FILE_CATEGORIES, name);
     this._categories.set(categories);
-    this._fileName.set(file.name);
+    this._categoriesFileName.set(name);
     this.sheetConfig.setLocalFileLoaded(true);
   }
 
@@ -136,66 +185,49 @@ export class LocalFileService {
 
   // ── Export ────────────────────────────────────────────────────────────────
 
-  /**
-   * Serialises the current in-memory state to an .xlsx file and triggers
-   * a browser download.
-   */
-  async export(fileName = 'expense-tracker.xlsx'): Promise<void> {
-    const settings = await this.idb.getAllSettings();
-    const wb = XLSX.utils.book_new();
-
-    // Expenses tab
-    const expRows = [
+  exportExpenses(baseName = 'expenses'): void {
+    const rows: string[][] = [
       [...EXPENSE_COLUMNS],
       ...this._expenses().map(expenseToRow),
     ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expRows), TAB.expenses);
+    downloadCsv(toCsv(rows), baseName.endsWith('.csv') ? baseName : baseName + '-expenses.csv');
+  }
 
-    // Categories tab
-    const catRows = [
+  exportCategories(baseName = 'categories'): void {
+    const rows: string[][] = [
       [...CATEGORY_COLUMNS],
       ...this._categories().map(categoryToRow),
     ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(catRows), TAB.categories);
+    downloadCsv(toCsv(rows), baseName.endsWith('.csv') ? baseName : baseName + '-categories.csv');
+  }
 
-    // Settings tab
-    const settingsRows: string[][] = [['key', 'value']];
-    settings.forEach((v, k) => settingsRows.push([k, v]));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(settingsRows), TAB.settings);
-
-    XLSX.writeFile(wb, fileName.endsWith('.xlsx') ? fileName : fileName + '.xlsx');
+  /** Convenience: export both at once. */
+  async export(baseName = 'expense-tracker'): Promise<void> {
+    this.exportExpenses(baseName);
+    this.exportCategories(baseName);
   }
 
   // ── Template download ─────────────────────────────────────────────────────
 
-  downloadTemplate(): void {
-    const wb = XLSX.utils.book_new();
+  downloadExpensesTemplate(): void {
+    downloadCsv(toCsv([[...EXPENSE_COLUMNS]]), 'expenses-template.csv');
+  }
 
-    // Expenses — headers only
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([[...EXPENSE_COLUMNS]]),
-      TAB.expenses,
-    );
-
-    // Categories — headers + default categories
-    const catRows: string[][] = [[...CATEGORY_COLUMNS]];
+  downloadCategoriesTemplate(): void {
+    const rows: string[][] = [[...CATEGORY_COLUMNS]];
     for (const c of DEFAULT_CATEGORIES) {
       const color = resolveMatToken(c.colorToken) || '#607d8b';
-      catRows.push(categoryToRow({
+      rows.push(categoryToRow({
         id: slugify(c.name), name: c.name, color, budgetLimit: 0, icon: c.icon,
       }));
     }
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(catRows), TAB.categories);
+    downloadCsv(toCsv(rows), 'categories-template.csv');
+  }
 
-    // Settings — headers only
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([['key', 'value']]),
-      TAB.settings,
-    );
-
-    XLSX.writeFile(wb, 'expense-tracker-template.xlsx');
+  /** Kept for backwards-compat (called from SettingsService). */
+  downloadTemplate(): void {
+    this.downloadExpensesTemplate();
+    this.downloadCategoriesTemplate();
   }
 
   // ── Clear ─────────────────────────────────────────────────────────────────
@@ -203,35 +235,13 @@ export class LocalFileService {
   async clearFile(): Promise<void> {
     await Promise.all([
       this.idb.clearAll(),
-      this.idb.deleteMeta(META_FILE_NAME),
+      this.idb.deleteMeta(META_FILE_EXPENSES),
+      this.idb.deleteMeta(META_FILE_CATEGORIES),
     ]);
     this._expenses.set([]);
     this._categories.set([]);
-    this._fileName.set(null);
+    this._expensesFileName.set(null);
+    this._categoriesFileName.set(null);
     this.sheetConfig.setLocalFileLoaded(false);
-  }
-
-  // ── Private helpers ───────────────────────────────────────────────────────
-
-  private readTab<T>(
-    wb: XLSX.WorkBook,
-    tabName: string,
-    mapper: (row: string[]) => T,
-  ): T[] {
-    const ws = wb.Sheets[tabName];
-    if (!ws) return [];
-    const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-    return rows.slice(1).filter((r) => r[0]).map(mapper);
-  }
-
-  private readSettings(wb: XLSX.WorkBook): Map<string, string> {
-    const map = new Map<string, string>();
-    const ws  = wb.Sheets[TAB.settings];
-    if (!ws) return map;
-    const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-    rows.slice(1).forEach((r) => {
-      if (r[0]) map.set(String(r[0]), String(r[1] ?? ''));
-    });
-    return map;
   }
 }

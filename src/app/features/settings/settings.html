@@ -8,13 +8,33 @@
       <mat-card-subtitle>{{ t('settings.local_file_subtitle') }}</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
-      @if (svc.sheetConfig.isLocalMode() && svc.localFile.fileName()) {
-        <div class="connected-badge">
-          <mat-icon class="ok-icon">insert_drive_file</mat-icon>
-          <span>{{ svc.localFile.fileName() }}</span>
+      <p class="hint">{{ t('settings.local_file_hint') }}</p>
+
+      <!-- Loaded files badges -->
+      @if (svc.sheetConfig.isLocalMode()) {
+        <div class="csv-badges">
+          <div class="csv-badge" [class.csv-badge--loaded]="svc.localFile.expenses().length > 0">
+            <mat-icon>receipt_long</mat-icon>
+            <span>
+              @if (svc.localFile.expenses().length > 0) {
+                {{ t('settings.csv_expenses_loaded') }} ({{ svc.localFile.expenses().length }})
+              } @else {
+                {{ t('settings.csv_expenses_empty') }}
+              }
+            </span>
+          </div>
+          <div class="csv-badge" [class.csv-badge--loaded]="svc.localFile.categories().length > 0">
+            <mat-icon>category</mat-icon>
+            <span>
+              @if (svc.localFile.categories().length > 0) {
+                {{ t('settings.csv_categories_loaded') }} ({{ svc.localFile.categories().length }})
+              } @else {
+                {{ t('settings.csv_categories_empty') }}
+              }
+            </span>
+          </div>
         </div>
       }
-      <p class="hint">{{ t('settings.local_file_hint') }}</p>
 
       <!-- Sync-to-Google info panel (local mode only) -->
       @if (svc.sheetConfig.isLocalMode()) {
@@ -26,19 +46,16 @@
           <p class="push-panel-desc">{{ t('settings.push_panel_desc') }}</p>
 
           @if (!svc.auth.isAuthenticated()) {
-            <!-- Step 1: not signed in -->
             <div class="push-step push-step--warn">
               <mat-icon>login</mat-icon>
               {{ t('settings.push_step_sign_in') }}
             </div>
           } @else if (!svc.sheetConfig.spreadsheetId()) {
-            <!-- Step 2: signed in but no sheet configured -->
             <div class="push-step push-step--warn">
               <mat-icon>table_chart</mat-icon>
               {{ t('settings.push_step_connect_sheet') }}
             </div>
           } @else {
-            <!-- Ready -->
             <div class="push-step push-step--ok">
               <mat-icon>check_circle</mat-icon>
               {{ t('settings.push_step_ready') }}
@@ -48,43 +65,61 @@
         </div>
       }
 
-      <!-- Hidden file input -->
-      <input #fileInput type="file" accept=".xlsx,.csv"
-        style="display:none"
+      <!-- Hidden CSV file inputs -->
+      <input #csvInput type="file" accept=".csv" style="display:none"
         (change)="onFileSelected($event)" />
     </mat-card-content>
+
     <mat-card-actions>
+      <!-- Upload -->
       <button mat-raised-button color="primary"
         [disabled]="svc.fileUploading()"
-        (click)="fileInput.click()">
+        (click)="csvInput.click()">
         @if (svc.fileUploading()) { <mat-spinner diameter="18" /> } @else { <mat-icon>upload</mat-icon> }
-        {{ svc.sheetConfig.isLocalMode() ? t('settings.local_file_replace') : t('settings.local_file_upload') }}
+        {{ t('settings.local_file_upload') }}
       </button>
 
       @if (svc.sheetConfig.isLocalMode()) {
-        <button mat-raised-button (click)="svc.exportLocalFile()">
+        <!-- Export -->
+        <button mat-stroked-button (click)="svc.exportExpenses()">
           <mat-icon>download</mat-icon>
-          {{ t('settings.local_file_export') }}
+          {{ t('settings.local_file_export_expenses') }}
         </button>
+        <button mat-stroked-button (click)="svc.exportCategories()">
+          <mat-icon>download</mat-icon>
+          {{ t('settings.local_file_export_categories') }}
+        </button>
+
+        <!-- Sync to Google Sheets -->
+        @if (svc.auth.isAuthenticated() && svc.sheetConfig.spreadsheetId()) {
+          <button mat-raised-button color="accent"
+            [disabled]="svc.pushing()"
+            (click)="svc.pushOfflineDataToSheet()">
+            @if (svc.pushing()) { <mat-spinner diameter="18" /> } @else { <mat-icon>cloud_upload</mat-icon> }
+            {{ t('settings.push_to_sheets') }}
+          </button>
+        }
+
+        <!-- Switch away -->
         <button mat-button color="warn" (click)="svc.switchToGoogleMode()">
           <mat-icon>cloud</mat-icon>
           {{ t('settings.switch_to_google') }}
         </button>
       }
-      @if (svc.sheetConfig.isLocalMode() && svc.auth.isAuthenticated() && svc.sheetConfig.spreadsheetId()) {
-        <button mat-raised-button color="accent"
-          [disabled]="svc.pushing()"
-          (click)="svc.pushOfflineDataToSheet()">
-          @if (svc.pushing()) { <mat-spinner diameter="18" /> } @else { <mat-icon>cloud_upload</mat-icon> }
-          {{ t('settings.push_to_sheets') }}
-        </button>
-      }
-
-      <button mat-stroked-button (click)="svc.downloadTemplate()">
-        <mat-icon>file_download</mat-icon>
-        {{ t('settings.local_file_template') }}
-      </button>
     </mat-card-actions>
+
+    <!-- Template downloads -->
+    <div class="template-row">
+      <span class="hint">{{ t('settings.local_file_template_hint') }}</span>
+      <button mat-button (click)="svc.downloadExpensesTemplate()">
+        <mat-icon>file_download</mat-icon>
+        {{ t('settings.local_file_template_expenses') }}
+      </button>
+      <button mat-button (click)="svc.downloadCategoriesTemplate()">
+        <mat-icon>file_download</mat-icon>
+        {{ t('settings.local_file_template_categories') }}
+      </button>
+    </div>
   </mat-card>
 
   <mat-divider />

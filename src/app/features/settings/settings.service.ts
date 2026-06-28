@@ -173,9 +173,17 @@ export class SettingsService {
     }
   }
 
+  exportExpenses(): void {
+    this.localFile.exportExpenses();
+  }
+
+  exportCategories(): void {
+    this.localFile.exportCategories();
+  }
+
+  /** @deprecated kept for backwards-compat — use exportExpenses/exportCategories */
   async exportLocalFile(): Promise<void> {
-    const name = this.localFile.fileName() ?? 'expense-tracker';
-    await this.localFile.export(name);
+    await this.localFile.export();
   }
 
   async switchToGoogleMode(): Promise<void> {
@@ -223,6 +231,14 @@ export class SettingsService {
     } finally {
       this._pushing.set(false);
     }
+  }
+
+  downloadExpensesTemplate(): void {
+    this.localFile.downloadExpensesTemplate();
+  }
+
+  downloadCategoriesTemplate(): void {
+    this.localFile.downloadCategoriesTemplate();
   }
 
   downloadTemplate(): void {
