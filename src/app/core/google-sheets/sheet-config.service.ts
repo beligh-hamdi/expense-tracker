@@ -2,8 +2,11 @@ import { Service, signal, computed, inject } from '@angular/core';
 import { AuthService } from '@core/auth/auth.service';
 import { environment } from '@environments/environment';
 
-const STORAGE_KEY_SHEET  = 'et_spreadsheet_id';
-const STORAGE_KEY_AI_KEY = 'et_ai_api_key';
+const STORAGE_KEY_SHEET   = 'et_spreadsheet_id';
+const STORAGE_KEY_AI_KEY  = 'et_ai_api_key';
+const STORAGE_KEY_MODE    = 'et_data_mode';
+
+export type DataMode = 'google' | 'local';
 
 /**
  * Stores and provides the user's Google Spreadsheet ID and AI API key.
@@ -14,12 +17,36 @@ const STORAGE_KEY_AI_KEY = 'et_ai_api_key';
 export class SheetConfigService {
   private readonly auth = inject(AuthService);
 
+  // ── Data mode (google | local) ─────────────────────────────────────────────
+
+  private readonly _dataMode = signal<DataMode>(
+    (localStorage.getItem(STORAGE_KEY_MODE) as DataMode | null) ?? 'google'
+  );
+  readonly dataMode    = this._dataMode.asReadonly();
+  readonly isLocalMode = computed(() => this._dataMode() === 'local');
+
+  setDataMode(mode: DataMode): void {
+    localStorage.setItem(STORAGE_KEY_MODE, mode);
+    this._dataMode.set(mode);
+  }
+
   // ── Spreadsheet ID ─────────────────────────────────────────────────────────
 
   private readonly _spreadsheetId = signal<string | null>(this.loadId());
 
   readonly spreadsheetId = this._spreadsheetId.asReadonly();
-  readonly isConfigured  = computed(() => !!this._spreadsheetId());
+  // True when google mode has a sheet ID, OR local mode has a file loaded.
+  // LocalFileService sets this via setLocalFileLoaded() to avoid a circular dep.
+  private readonly _localFileLoaded = signal(false);
+  readonly isConfigured = computed(
+    () => this._dataMode() === 'local'
+      ? this._localFileLoaded()
+      : !!this._spreadsheetId()
+  );
+
+  setLocalFileLoaded(loaded: boolean): void {
+    this._localFileLoaded.set(loaded);
+  }
 
   setSpreadsheetId(id: string): void {
     const key = this.sheetStorageKey();

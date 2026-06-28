@@ -3,6 +3,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoService } from '@jsverse/transloco';
 import { GoogleSheetsService } from '@core/google-sheets/google-sheets.service';
 import { SheetConfigService } from '@core/google-sheets/sheet-config.service';
+import { LocalFileService } from '@core/local-file/local-file.service';
 import { Expense } from '@shared/models/expense.model';
 import { Category } from '@shared/models/category.model';
 
@@ -10,6 +11,7 @@ import { Category } from '@shared/models/category.model';
 export class ExpensesService {
   private readonly sheets      = inject(GoogleSheetsService);
   private readonly sheetConfig = inject(SheetConfigService);
+  private readonly localFile   = inject(LocalFileService);
   private readonly snack       = inject(MatSnackBar);
   private readonly transloco   = inject(TranslocoService);
 
@@ -31,11 +33,19 @@ export class ExpensesService {
   );
 
   constructor() {
-    // Auto-load once the sheet is configured
+    // Auto-load once the sheet is configured (google or local)
     effect(() => {
       if (!this._loaded() && this.sheetConfig.isConfigured()) {
         this._loaded.set(true);
         this.loadAll();
+      }
+    });
+
+    // In local mode: reactively mirror LocalFileService signals into this service
+    effect(() => {
+      if (this.sheetConfig.isLocalMode()) {
+        this._expenses.set(this.localFile.expenses());
+        this._categories.set(this.localFile.categories());
       }
     });
   }
@@ -43,6 +53,13 @@ export class ExpensesService {
   // ── Data loading ───────────────────────────────────────────────────────────
 
   async loadAll(): Promise<void> {
+    if (this.sheetConfig.isLocalMode()) {
+      // Local mode: data already in LocalFileService signals — just mirror them
+      this._expenses.set(this.localFile.expenses());
+      this._categories.set(this.localFile.categories());
+      return;
+    }
+
     this._loading.set(true);
     try {
       const [expenses, categories] = await Promise.all([
@@ -61,20 +78,32 @@ export class ExpensesService {
   // ── CRUD ───────────────────────────────────────────────────────────────────
 
   async add(expense: Expense): Promise<void> {
-    await this.sheets.addExpense(expense);
-    this._expenses.update((list) => [expense, ...list]);
+    if (this.sheetConfig.isLocalMode()) {
+      this.localFile.addExpense(expense);
+    } else {
+      await this.sheets.addExpense(expense);
+      this._expenses.update((list) => [expense, ...list]);
+    }
     this.snack.open(this.t('expenses.expense_added'), this.t('expenses.ok'), { duration: 3000 });
   }
 
   async update(updated: Expense): Promise<void> {
-    await this.sheets.updateExpense(updated);
-    this._expenses.update((list) => list.map((e) => (e.id === updated.id ? updated : e)));
+    if (this.sheetConfig.isLocalMode()) {
+      this.localFile.updateExpense(updated);
+    } else {
+      await this.sheets.updateExpense(updated);
+      this._expenses.update((list) => list.map((e) => (e.id === updated.id ? updated : e)));
+    }
     this.snack.open(this.t('expenses.expense_updated'), this.t('expenses.ok'), { duration: 3000 });
   }
 
   async delete(id: string): Promise<void> {
-    await this.sheets.deleteExpense(id);
-    this._expenses.update((list) => list.filter((e) => e.id !== id));
+    if (this.sheetConfig.isLocalMode()) {
+      this.localFile.deleteExpense(id);
+    } else {
+      await this.sheets.deleteExpense(id);
+      this._expenses.update((list) => list.filter((e) => e.id !== id));
+    }
     this.snack.open(this.t('expenses.expense_deleted'), this.t('expenses.ok'), { duration: 3000 });
   }
 

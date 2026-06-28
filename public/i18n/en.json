@@ -213,6 +213,17 @@
     "an_error_occurred": "An error occurred"
   },
   "settings": {
+    "local_file_title": "Local File (Offline)",
+    "local_file_subtitle": "Use an Excel or CSV file — no login, no internet required",
+    "local_file_hint": "Upload an .xlsx or .csv file with Expenses, Categories and Settings tabs. All edits are kept in memory until you export.",
+    "local_file_upload": "Upload file",
+    "local_file_replace": "Replace file",
+    "local_file_export": "Export (.xlsx)",
+    "local_file_template": "Download template",
+    "local_file_loaded": "Loaded: {name}",
+    "local_file_error": "Failed to read the file — please check the format",
+    "switch_to_google": "Switch to Google Sheets",
+    "switched_to_google": "Switched back to Google Sheets mode",
     "google_sheet_title": "Google Sheet",
     "google_sheet_subtitle": "Connect a Google Spreadsheet to store your expenses",
     "connected_to_spreadsheet": "Connected to spreadsheet",

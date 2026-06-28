@@ -213,6 +213,17 @@
     "an_error_occurred": "حدث خطأ"
   },
   "settings": {
+    "local_file_title": "ملف محلي (بدون إنترنت)",
+    "local_file_subtitle": "استخدم ملف Excel أو CSV — بدون تسجيل دخول أو إنترنت",
+    "local_file_hint": "ارفع ملف .xlsx أو .csv يحتوي على تبويبات النفقات والفئات والإعدادات. تبقى التعديلات في الذاكرة حتى تقوم بالتصدير.",
+    "local_file_upload": "رفع ملف",
+    "local_file_replace": "استبدال الملف",
+    "local_file_export": "تصدير (.xlsx)",
+    "local_file_template": "تحميل القالب",
+    "local_file_loaded": "تم التحميل: {name}",
+    "local_file_error": "تعذّر قراءة الملف — يرجى التحقق من التنسيق",
+    "switch_to_google": "التبديل إلى Google Sheets",
+    "switched_to_google": "تم الرجوع إلى وضع Google Sheets",
     "google_sheet_title": "Google Sheet",
     "google_sheet_subtitle": "قم بتوصيل جدول بيانات Google لتخزين نفقاتك",
     "connected_to_spreadsheet": "متصل بجدول البيانات",

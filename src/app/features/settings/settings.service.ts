@@ -8,6 +8,7 @@ import { LanguageService } from '@core/i18n/language.service';
 import { APP_VERSION } from '@core/version/version.token';
 import { ExpensesService } from '@features/expenses/expenses.service';
 import { CategoriesService } from '@features/categories/categories.service';
+import { LocalFileService } from '@core/local-file/local-file.service';
 
 const SHEET_KEY_AI = 'gemini_api_key';
 
@@ -22,6 +23,7 @@ export class SettingsService {
   private readonly transloco = inject(TranslocoService);
   private readonly expensesSvc    = inject(ExpensesService);
   private readonly categoriesSvc  = inject(CategoriesService);
+  readonly localFile              = inject(LocalFileService);
 
   // ── Private writable state ─────────────────────────────────────────────────
 
@@ -138,6 +140,50 @@ export class SettingsService {
     } finally {
       this._syncing.set(false);
     }
+  }
+
+  // ── Local file mode ────────────────────────────────────────────────────────
+
+  private readonly _fileUploading = signal(false);
+  readonly fileUploading = this._fileUploading.asReadonly();
+
+  async loadLocalFile(file: File): Promise<void> {
+    this._fileUploading.set(true);
+    try {
+      this.sheetConfig.setDataMode('local');
+      await this.localFile.load(file);
+      // Sync AI key if present in the file's Settings tab
+      const key = this.localFile.getSetting('gemini_api_key');
+      if (key) {
+        this.sheetConfig.setAiApiKey(key);
+        this.aiApiKeyInput.set(key);
+      }
+      this.snack.open(
+        this.t('settings.local_file_loaded').replace('{name}', file.name),
+        this.t('settings.ok'),
+        { duration: 4000 },
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : this.t('settings.local_file_error');
+      this.snack.open(msg, this.t('settings.dismiss'), { duration: 6000 });
+    } finally {
+      this._fileUploading.set(false);
+    }
+  }
+
+  exportLocalFile(): void {
+    const name = this.localFile.fileName() ?? 'expense-tracker';
+    this.localFile.export(name);
+  }
+
+  switchToGoogleMode(): void {
+    this.sheetConfig.setDataMode('google');
+    this.localFile.clearFile();
+    this.snack.open(this.t('settings.switched_to_google'), this.t('settings.ok'), { duration: 3000 });
+  }
+
+  downloadTemplate(): void {
+    this.localFile.downloadTemplate();
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

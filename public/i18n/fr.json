@@ -213,6 +213,17 @@
     "an_error_occurred": "Une erreur s'est produite"
   },
   "settings": {
+    "local_file_title": "Fichier local (Hors ligne)",
+    "local_file_subtitle": "Utilisez un fichier Excel ou CSV — sans connexion ni internet",
+    "local_file_hint": "Importez un fichier .xlsx ou .csv avec les onglets Dépenses, Catégories et Paramètres. Les modifications restent en mémoire jusqu'à l'export.",
+    "local_file_upload": "Importer un fichier",
+    "local_file_replace": "Remplacer le fichier",
+    "local_file_export": "Exporter (.xlsx)",
+    "local_file_template": "Télécharger le modèle",
+    "local_file_loaded": "Chargé : {name}",
+    "local_file_error": "Impossible de lire le fichier — vérifiez le format",
+    "switch_to_google": "Passer à Google Sheets",
+    "switched_to_google": "Retour au mode Google Sheets",
     "google_sheet_title": "Google Sheet",
     "google_sheet_subtitle": "Connectez une feuille de calcul Google pour stocker vos dépenses",
     "connected_to_spreadsheet": "Connecté à la feuille",

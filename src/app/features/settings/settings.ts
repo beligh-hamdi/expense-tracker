@@ -32,4 +32,13 @@ import { SettingsService } from './settings.service';
 })
 export class SettingsComponent {
   readonly svc = inject(SettingsService);
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.svc.loadLocalFile(file);
+    // Reset the input so the same file can be re-uploaded if needed
+    input.value = '';
+  }
 }

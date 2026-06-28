@@ -3,6 +3,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoService } from '@jsverse/transloco';
 import { GoogleSheetsService } from '@core/google-sheets/google-sheets.service';
 import { SheetConfigService } from '@core/google-sheets/sheet-config.service';
+import { LocalFileService } from '@core/local-file/local-file.service';
 import { LanguageService } from '@core/i18n/language.service';
 import { Category } from '@shared/models/category.model';
 
@@ -10,6 +11,7 @@ import { Category } from '@shared/models/category.model';
 export class CategoriesService {
   private readonly sheets      = inject(GoogleSheetsService);
   readonly sheetConfig         = inject(SheetConfigService);
+  private readonly localFile   = inject(LocalFileService);
   private readonly snack       = inject(MatSnackBar);
   private readonly transloco   = inject(TranslocoService);
   private readonly lang        = inject(LanguageService);
@@ -34,6 +36,10 @@ export class CategoriesService {
 
   async load(): Promise<void> {
     if (!this.sheetConfig.isConfigured()) return;
+    if (this.sheetConfig.isLocalMode()) {
+      this._categories.set(this.localFile.categories());
+      return;
+    }
     this._loading.set(true);
     try {
       this._categories.set(await this.sheets.getCategories());
@@ -47,20 +53,35 @@ export class CategoriesService {
   // ── CRUD ───────────────────────────────────────────────────────────────────
 
   async add(cat: Category): Promise<void> {
-    await this.sheets.addCategory(cat);
-    this._categories.update((list) => [...list, cat]);
+    if (this.sheetConfig.isLocalMode()) {
+      this.localFile.addCategory(cat);
+      this._categories.update((list) => [...list, cat]);
+    } else {
+      await this.sheets.addCategory(cat);
+      this._categories.update((list) => [...list, cat]);
+    }
     this.snack.open(this.t('categories.category_created'), this.t('common.ok'), { duration: 3000 });
   }
 
   async update(updated: Category): Promise<void> {
-    await this.sheets.updateCategory(updated);
-    this._categories.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+    if (this.sheetConfig.isLocalMode()) {
+      this.localFile.updateCategory(updated);
+      this._categories.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+    } else {
+      await this.sheets.updateCategory(updated);
+      this._categories.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+    }
     this.snack.open(this.t('categories.category_updated'), this.t('common.ok'), { duration: 3000 });
   }
 
   async delete(id: string): Promise<void> {
-    await this.sheets.deleteCategory(id);
-    this._categories.update((list) => list.filter((c) => c.id !== id));
+    if (this.sheetConfig.isLocalMode()) {
+      this.localFile.deleteCategory(id);
+      this._categories.update((list) => list.filter((c) => c.id !== id));
+    } else {
+      await this.sheets.deleteCategory(id);
+      this._categories.update((list) => list.filter((c) => c.id !== id));
+    }
     this.snack.open(this.t('categories.category_deleted'), this.t('common.ok'), { duration: 3000 });
   }
 
