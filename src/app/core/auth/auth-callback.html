@@ -1,0 +1,15 @@
+
+    <div class="callback-container" *transloco="let t; prefix: 'auth_callback'">
+      @if (errorMessage()) {
+        <mat-icon class="error-icon">error_outline</mat-icon>
+        <h2>{{ t('sign_in_failed') }}</h2>
+        <p class="error-message">{{ errorMessage() }}</p>
+        <button mat-raised-button color="primary" (click)="retry()">
+          {{ t('try_again') }}
+        </button>
+      } @else {
+        <mat-spinner />
+        <p>{{ t('signing_you_in') }}</p>
+      }
+    </div>
+  

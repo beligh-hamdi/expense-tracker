@@ -1,0 +1,30 @@
+<div class="expenses-page" *transloco="let t">
+
+  <!-- Header row -->
+  <div class="page-header">
+    <h1 class="page-title">{{ t('expenses.page_title') }}</h1>
+    <button mat-raised-button color="primary" (click)="openAddDialog()" [disabled]="!sheetConfig.isConfigured()">
+      <mat-icon>add</mat-icon>
+      {{ t('expenses.add_expense') }}
+    </button>
+  </div>
+
+  <!-- Not configured notice -->
+  @if (!sheetConfig.isConfigured()) {
+    <mat-card class="notice-card">
+      <mat-card-content>
+        <mat-icon>table_chart</mat-icon>
+        {{ t('expenses.connect_spreadsheet_notice') }}
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <app-expense-list
+      [expenses]="svc.expenses()"
+      [categories]="svc.categories()"
+      [loading]="svc.loading()"
+      (edit)="openEditDialog($event)"
+      (delete)="confirmDelete($event)"
+    />
+  }
+
+</div>

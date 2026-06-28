@@ -1,0 +1,11 @@
+
+    <mat-card class="chart-card" *transloco="let t">
+      <mat-card-header>
+        <mat-card-title>{{ t('dashboard.daily_spending') }}</mat-card-title>
+        <mat-card-subtitle>{{ monthLabel() }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <app-chart [type]="'line'" [config]="config()" />
+      </mat-card-content>
+    </mat-card>
+  

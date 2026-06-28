@@ -1,0 +1,80 @@
+.summary-chips {
+  display: flex;
+  margin-bottom: 0.25rem;
+}
+
+.search-field {
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: 1rem;
+}
+
+.loading-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.table-container.hidden {
+  visibility: hidden;
+  height: 0;
+}
+
+.expenses-table {
+  width: 100%;
+}
+
+.expense-row:hover {
+  background: var(--mat-sys-surface-container-high);
+}
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cat-icon {
+  font-size: 0.95rem;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.desc-cell {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amount-header, .amount-cell {
+  text-align: right !important;
+  padding-right: 1rem !important;
+}
+
+.amount-cell {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions-cell {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2.5rem !important;
+  color: var(--mat-sys-on-surface-variant);
+}

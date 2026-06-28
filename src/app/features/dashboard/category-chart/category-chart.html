@@ -1,0 +1,17 @@
+
+    <mat-card class="chart-card" *transloco="let t">
+      <mat-card-header>
+        <mat-card-title>{{ t('dashboard.spending_by_category') }}</mat-card-title>
+        <mat-card-subtitle>{{ t('dashboard.this_month') }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (stats().categoryBreakdown.length) {
+          <div class="category-bar-wrap" [style.height.px]="barHeight()">
+            <app-chart [type]="'bar'" [config]="config()" />
+          </div>
+        } @else {
+          <p class="no-data">{{ t('dashboard.no_expenses_this_month') }}</p>
+        }
+      </mat-card-content>
+    </mat-card>
+  

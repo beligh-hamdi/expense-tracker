@@ -1,0 +1,166 @@
+
+    <mat-sidenav-container class="shell-container" *transloco="let t">
+      <!-- Sidebar -->
+      <mat-sidenav
+        #sidenav
+        [mode]="isMobile() ? 'over' : 'side'"
+        [opened]="!isMobile()"
+        class="sidenav"
+      >
+        <div class="sidenav-header">
+          <mat-icon class="brand-icon">account_balance_wallet</mat-icon>
+          <span class="brand-name">{{ t('nav.brand_name') }}</span>
+        </div>
+
+        <mat-divider />
+
+        <mat-nav-list>
+          @for (item of navItems; track item.route) {
+            <a
+              mat-list-item
+              [routerLink]="item.route"
+              routerLinkActive="active-link"
+              [matTooltip]="t('nav.' + item.navKey)"
+              [matTooltipPosition]="langService.activeLang() === 'ar' ? 'left' : 'right'"
+            >
+              <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+              <span matListItemTitle>{{ t('nav.' + item.navKey) }}</span>
+            </a>
+          }
+        </mat-nav-list>
+
+        <div class="sidenav-footer">
+          <mat-divider />
+          @if (user()) {
+            <div class="user-info">
+              <img [src]="user()!.picture" [alt]="user()!.name" class="avatar" />
+              <div class="user-details">
+                <span class="user-name">{{ user()!.name }}</span>
+                <span class="user-email">{{ user()!.email }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </mat-sidenav>
+
+      <!-- Main content -->
+      <mat-sidenav-content>
+        <!-- Top toolbar -->
+        <mat-toolbar color="primary" class="toolbar">
+          <button mat-icon-button (click)="sidenav.toggle()" [attr.aria-label]="t('nav.toggle_menu_aria')">
+            <mat-icon>menu</mat-icon>
+          </button>
+
+          <span class="toolbar-title">{{ pageTitle() }}</span>
+
+          <span class="spacer"></span>
+
+          <!-- Dark mode toggle -->
+          <button
+            mat-icon-button
+            (click)="theme.toggle()"
+            [matTooltip]="theme.isDark() ? t('nav.switch_to_light_mode') : t('nav.switch_to_dark_mode')"
+            [attr.aria-label]="t('nav.toggle_dark_mode_aria')"
+          >
+            <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          </button>
+
+          <!-- Language switcher -->
+          <button
+            mat-icon-button
+            [matMenuTriggerFor]="langMenu"
+            [matTooltip]="t('nav.switch_language')"
+            [attr.aria-label]="t('nav.switch_language')"
+          >
+            <mat-icon>language</mat-icon>
+          </button>
+
+          <mat-menu #langMenu="matMenu">
+            @for (lang of langService.languages; track lang.code) {
+              <button
+                mat-menu-item
+                (click)="langService.setLang(lang.code)"
+                [class.lang-active]="langService.activeLang() === lang.code"
+              >
+                <span class="lang-code">{{ lang.code | uppercase }}</span>
+                {{ lang.label }}
+                @if (langService.activeLang() === lang.code) {
+                  <mat-icon class="lang-check">check</mat-icon>
+                }
+              </button>
+            }
+          </mat-menu>
+
+          <!-- User menu -->
+          <button mat-icon-button [matMenuTriggerFor]="userMenu" [attr.aria-label]="t('nav.user_menu_aria')">
+            @if (user()?.picture) {
+              <img [src]="user()!.picture" [alt]="user()!.name" class="toolbar-avatar" />
+            } @else {
+              <mat-icon>account_circle</mat-icon>
+            }
+          </button>
+
+          <mat-menu #userMenu="matMenu">
+            @if (user()) {
+              <div class="menu-user-info">
+                <strong>{{ user()!.name }}</strong>
+                <small>{{ user()!.email }}</small>
+              </div>
+              <mat-divider />
+            }
+            <button mat-menu-item routerLink="/settings">
+              <mat-icon>settings</mat-icon>
+              {{ t('nav.settings') }}
+            </button>
+            <button mat-menu-item (click)="logout()">
+              <mat-icon>logout</mat-icon>
+              {{ t('nav.sign_out') }}
+            </button>
+          </mat-menu>
+        </mat-toolbar>
+
+        <!-- SW update banner -->
+        @if (pwa.updateAvailable()) {
+          <div class="pwa-banner update-banner">
+            <mat-icon>system_update</mat-icon>
+            <span>{{ t('nav.update_available') }}</span>
+            <button mat-button (click)="pwa.activateUpdate()">{{ t('nav.update_now') }}</button>
+          </div>
+        }
+
+        <!-- Offline banner -->
+        @if (pwa.isOffline()) {
+          <div class="pwa-banner offline-banner">
+            <mat-icon>wifi_off</mat-icon>
+            <span>{{ t('nav.offline_message') }}</span>
+          </div>
+        }
+
+        <!-- Install banner -->
+        @if (pwa.installable() && !installDismissed()) {
+          <div class="pwa-banner install-banner">
+            <mat-icon>install_mobile</mat-icon>
+            <span>{{ t('nav.install_app_message') }}</span>
+            <button mat-button (click)="pwa.promptInstall()">{{ t('nav.install') }}</button>
+            <button mat-icon-button (click)="installDismissed.set(true)">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        }
+
+        <!-- Sheet setup banner -->
+        @if (!sheetConfig.isConfigured()) {
+          <div class="setup-banner">
+            <mat-icon>warning</mat-icon>
+            <span>{{ t('nav.no_spreadsheet_connected') }}</span>
+            <a mat-button routerLink="/settings">{{ t('nav.go_to_settings') }}</a>
+          </div>
+        }
+
+        <!-- Routed page content -->
+        <div class="page-content">
+          <router-outlet />
+        </div>
+      </mat-sidenav-content>
+    </mat-sidenav-container>
+  

@@ -1,0 +1,25 @@
+
+    <mat-card *transloco="let t">
+      <mat-card-header>
+        <mat-card-title>{{ t('dashboard.budget_progress') }}</mat-card-title>
+        <mat-card-subtitle>{{ t('dashboard.this_month_vs_monthly_limits') }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="budget-list">
+        @for (item of budgetItems(); track item.category.id) {
+          <div class="budget-row">
+            <div class="budget-info">
+              <mat-icon [style.color]="item.category.color">{{ item.category.icon }}</mat-icon>
+              <span class="budget-name">{{ catName(item.category.name) }}</span>
+              <span class="budget-amounts">{{ item.spent | currency }} / {{ item.category.budgetLimit | currency }}</span>
+              <span class="budget-pct" [class.over]="item.pct >= 1">{{ item.pct | percent:'1.0-0' }}</span>
+            </div>
+            <mat-progress-bar
+              [value]="item.pct * 100"
+              [color]="item.pct >= 1 ? 'warn' : item.pct >= 0.8 ? 'accent' : 'primary'"
+              mode="determinate"
+            />
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  

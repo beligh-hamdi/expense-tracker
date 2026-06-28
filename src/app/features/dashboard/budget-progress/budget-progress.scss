@@ -1,0 +1,14 @@
+
+    .budget-list { display: flex; flex-direction: column; gap: 1rem; padding-top: 0.5rem !important; }
+    .budget-row { display: flex; flex-direction: column; gap: 0.35rem; }
+    .budget-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+    }
+    .budget-name { flex: 1; font-weight: 500; }
+    .budget-amounts { color: var(--mat-sys-on-surface-variant); }
+    .budget-pct { font-weight: 600; color: var(--mat-sys-primary); min-width: 3rem; text-align: right; }
+    .budget-pct.over { color: var(--mat-sys-error); }
+  

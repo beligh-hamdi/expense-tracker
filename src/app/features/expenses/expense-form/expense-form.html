@@ -1,0 +1,118 @@
+
+    <ng-container *transloco="let t">
+      <h2 mat-dialog-title>{{ isEdit ? t('expense_form.edit_expense_title') : t('expense_form.add_expense_title') }}</h2>
+
+      <mat-dialog-content>
+        <form class="expense-form">
+
+          <!-- Receipt OCR upload -->
+          <div class="receipt-row">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="fileInput.click()"
+              [disabled]="ocrLoading()"
+              [matTooltip]="t('expense_form.scan_receipt_tooltip')"
+            >
+              @if (ocrLoading()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                <mat-icon>document_scanner</mat-icon>
+              }
+              {{ t('expense_form.scan_receipt') }}
+            </button>
+            <input
+              #fileInput
+              type="file"
+              accept="image/*"
+              class="hidden-input"
+              (change)="onFileSelected($event)"
+            />
+            @if (ocrError()) {
+              <span class="ocr-error">{{ ocrError() }}</span>
+            }
+            @if (receiptPreview()) {
+              <img
+                [src]="receiptPreview()!"
+                class="receipt-thumb"
+                [attr.alt]="t('expense_form.receipt_preview_alt')"
+                (click)="zoomedIn.set(true)"
+                matTooltip="Click to zoom"
+              />
+            }
+          </div>
+
+          <!-- OCR raw text preview -->
+          @if (ocrRawText()) {
+            <div class="ocr-preview">
+              <div class="ocr-preview-label">
+                <mat-icon>receipt</mat-icon>
+                <span>Scanned text</span>
+              </div>
+              <pre class="ocr-preview-text">{{ ocrRawText() }}</pre>
+            </div>
+          }
+
+          <!-- Date -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ t('expense_form.date_label') }}</mat-label>
+            <input matInput [matDatepicker]="picker" [value]="date()" (dateChange)="onDateChange($event.value)" />
+            <mat-datepicker-toggle matIconSuffix [for]="picker" />
+            <mat-datepicker #picker />
+            <mat-error>{{ t('expense_form.date_required_error') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Amount -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ t('expense_form.amount_label') }}</mat-label>
+            <input matInput type="number" min="0" step="0.01" [value]="amount()" (input)="onAmountInput($event)" />
+            <span matTextPrefix>$&nbsp;</span>
+            <mat-error>{{ t('expense_form.amount_valid_error') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Category -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ t('expense_form.category_label') }}</mat-label>
+            <mat-select [value]="categoryId()" (selectionChange)="categoryId.set($event.value)">
+              @for (cat of data.categories; track cat.id) {
+                <mat-option [value]="cat.id">
+                  <mat-icon [style.color]="cat.color">{{ cat.icon }}</mat-icon>
+                  {{ catName(cat.name) }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-error>{{ t('expense_form.category_required_error') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Description -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ t('expense_form.description_label') }}</mat-label>
+            <input matInput [value]="description()" (input)="onDescriptionInput($event)" maxlength="200" />
+            <mat-hint align="end">{{ description().length }}/200</mat-hint>
+          </mat-form-field>
+
+        </form>
+      </mat-dialog-content>
+
+      <!-- Receipt lightbox overlay -->
+      @if (zoomedIn() && receiptPreview()) {
+        <div class="lightbox" (click)="zoomedIn.set(false)">
+          <button class="lightbox-close" mat-icon-button (click)="zoomedIn.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+          <img [src]="receiptPreview()!" class="lightbox-img" [attr.alt]="t('expense_form.receipt_preview_alt')" (click)="$event.stopPropagation()" />
+        </div>
+      }
+
+      <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close>{{ t('expense_form.cancel') }}</button>
+        <button
+          mat-raised-button
+          color="primary"
+          [disabled]="!isValid()"
+          (click)="submit()"
+        >
+          {{ isEdit ? t('expense_form.save_changes') : t('expense_form.add_expense_button') }}
+        </button>
+      </mat-dialog-actions>
+    </ng-container>

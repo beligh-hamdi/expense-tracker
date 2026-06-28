@@ -1,0 +1,58 @@
+
+    <div class="cards-row" *transloco="let t">
+
+      <mat-card class="stat-card">
+        <div class="stat-icon-wrap primary-container">
+          <mat-icon class="on-primary-container">payments</mat-icon>
+        </div>
+        <div class="stat-body">
+          <div class="stat-value">{{ stats().totalThisMonth | currency }}</div>
+          <div class="stat-label">{{ t('dashboard.spent_this_month') }}</div>
+          <div class="stat-sub" [class.positive]="monthChange() < 0" [class.negative]="monthChange() > 0">
+            @if (stats().totalLastMonth > 0) {
+              {{ monthChange() > 0 ? '+' : '' }}{{ monthChange() | percent:'1.0-0' }} {{ t('dashboard.vs_last_month') }}
+            }
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <div class="stat-icon-wrap secondary-container">
+          <mat-icon class="on-secondary-container">receipt_long</mat-icon>
+        </div>
+        <div class="stat-body">
+          <div class="stat-value">{{ stats().countThisMonth }}</div>
+          <div class="stat-label">{{ t('dashboard.expenses_this_month') }}</div>
+          <div class="stat-sub">{{ t('dashboard.avg') }} {{ stats().avgPerDay | currency }} {{ t('dashboard.per_day') }}</div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <div class="stat-icon-wrap tertiary-container">
+          <mat-icon class="on-tertiary-container">category</mat-icon>
+        </div>
+        <div class="stat-body">
+          @if (stats().topCategory; as cat) {
+            <div class="stat-value">{{ catName(cat.name) }}</div>
+            <div class="stat-label">{{ t('dashboard.top_category_this_month') }}</div>
+            <div class="stat-sub">{{ topCategoryTotal() | currency }} {{ t('dashboard.spent') }}</div>
+          } @else {
+            <div class="stat-value">—</div>
+            <div class="stat-label">{{ t('dashboard.no_expenses_yet') }}</div>
+          }
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <div class="stat-icon-wrap surface-variant">
+          <mat-icon class="on-surface-variant">trending_up</mat-icon>
+        </div>
+        <div class="stat-body">
+          <div class="stat-value">{{ stats().totalAllTime | currency }}</div>
+          <div class="stat-label">{{ t('dashboard.all_time_total') }}</div>
+          <div class="stat-sub">{{ expenseCount() }} {{ t('dashboard.expenses_total') }}</div>
+        </div>
+      </mat-card>
+
+    </div>
+  

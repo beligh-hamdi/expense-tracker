@@ -1,0 +1,39 @@
+<div class="dashboard" *transloco="let t">
+
+  <!-- Not configured -->
+  @if (!svc.sheetConfig.isConfigured()) {
+    <mat-card class="notice-card">
+      <mat-card-content>
+        <mat-icon>table_chart</mat-icon>
+        <span>{{ t('dashboard.connect_spreadsheet_notice') }}</span>
+      </mat-card-content>
+    </mat-card>
+
+  } @else if (svc.loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="48" />
+      <p>{{ t('dashboard.loading_data') }}</p>
+    </div>
+
+  } @else if (svc.stats()) {
+
+    <app-stat-cards
+      [stats]="svc.stats()!"
+      [expenseCount]="svc.expenses().length"
+    />
+
+    <div class="charts-row">
+      <app-category-chart [stats]="svc.stats()!" />
+      <app-daily-chart    [stats]="svc.stats()!" />
+    </div>
+
+    <app-monthly-chart [stats]="svc.stats()!" />
+
+    @if (svc.categoriesWithBudget().length) {
+      <app-budget-progress [stats]="svc.stats()!" [categories]="svc.categories()" />
+    }
+
+    <app-recent-expenses [expenses]="svc.expenses()" [categories]="svc.categories()" />
+
+  }
+</div>

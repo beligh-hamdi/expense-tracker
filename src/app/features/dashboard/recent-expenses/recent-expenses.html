@@ -1,0 +1,27 @@
+
+    <mat-card *transloco="let t">
+      <mat-card-header>
+        <mat-card-title>{{ t('dashboard.recent_expenses') }}</mat-card-title>
+        <a mat-button routerLink="/expenses" style="margin-left:auto">{{ t('dashboard.view_all') }}</a>
+      </mat-card-header>
+      <mat-card-content>
+        @for (e of recent(); track e.id) {
+          <div class="recent-row">
+            @if (catMap()[e.categoryId]; as cat) {
+              <span class="recent-cat-dot" [style.background]="cat.color">
+                <mat-icon>{{ cat.icon }}</mat-icon>
+              </span>
+            }
+            <div class="recent-info">
+              <span class="recent-desc">{{ e.description || '—' }}</span>
+              <span class="recent-date">{{ e.date | date:'mediumDate' }}</span>
+            </div>
+            <span class="recent-amount">{{ e.amount | currency }}</span>
+          </div>
+          <mat-divider />
+        } @empty {
+          <p class="no-data">{{ t('dashboard.no_expenses_add_one') }}</p>
+        }
+      </mat-card-content>
+    </mat-card>
+  

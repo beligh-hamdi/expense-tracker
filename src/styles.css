@@ -1,0 +1,178 @@
+/* Global styles for Expense Tracker AI */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* background driven by material-theme.scss via --mat-sys-surface */
+}
+
+/* Remove default anchor styling where Material handles it */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Material icon alignment helper */
+mat-icon {
+  vertical-align: middle;
+}
+
+/* Prevent horizontal scroll on the main content area */
+mat-sidenav-content {
+  overflow-x: hidden !important;
+}
+
+/* Material sets overflow: auto on this inner container which creates a
+   horizontal scroll context inside the drawer. Override to clip it. */
+.mat-drawer-inner-container {
+  overflow-x: hidden !important;
+}
+
+/* Prevent any routed page from causing horizontal scroll */
+.page-content,
+.page-content > * {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ── RTL layout overrides ────────────────────────────────────────────────── */
+/* Applied when LanguageService switches to Arabic (body.rtl)                */
+
+body.rtl {
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+/* Sidenav: Angular Material respects [dir] on the host element for position,
+   but we also ensure the inner container flips correctly */
+body.rtl .mat-drawer-container {
+  direction: rtl;
+}
+
+/* Toolbar: reverse flex direction so menu/hamburger stays on the correct side */
+body.rtl mat-toolbar {
+  direction: rtl;
+}
+
+/* Nav list items: icon should still be on the start (right in RTL) */
+body.rtl mat-nav-list a {
+  direction: rtl;
+}
+
+/* Page content padding stays symmetric — no change needed */
+
+/* Form fields and inputs */
+body.rtl .mat-mdc-form-field,
+body.rtl input,
+body.rtl textarea,
+body.rtl select {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Mat select panel */
+body.rtl .mat-mdc-select-panel {
+  direction: rtl;
+}
+
+/* Snackbar */
+body.rtl .mat-mdc-snack-bar-container {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Dialogs */
+body.rtl .mat-mdc-dialog-container {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Mat menu */
+body.rtl .mat-mdc-menu-panel {
+  direction: rtl;
+}
+
+/* Tables */
+body.rtl .mat-mdc-table {
+  direction: rtl;
+}
+
+/* Cards */
+body.rtl mat-card,
+body.rtl .mat-mdc-card {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Chips */
+body.rtl .mat-mdc-chip {
+  direction: rtl;
+}
+
+/* Flip margin/padding logical properties for sidenav header & user info */
+body.rtl .sidenav-header,
+body.rtl .user-info {
+  flex-direction: row-reverse;
+}
+
+/* Icons inside flex rows should not flip — they are symmetric */
+body.rtl mat-icon {
+  direction: ltr;
+}
+
+/* ── Dark-mode overrides for hard-coded colours ──────────────────────────── */
+/* These only apply when ThemeService sets color-scheme: dark on <body>      */
+
+body.dark-theme {
+  /* Page background */
+  background-color: var(--mat-sys-surface);
+
+  /* Shell page-content area */
+  .page-content {
+    background-color: var(--mat-sys-surface);
+  }
+
+  /* Mat cards */
+  mat-card, .mat-mdc-card {
+    background-color: var(--mat-sys-surface-container) !important;
+    color: var(--mat-sys-on-surface) !important;
+  }
+
+  /* Input fields */
+  .mat-mdc-form-field {
+    color: var(--mat-sys-on-surface);
+  }
+
+  /* Chips */
+  .mat-mdc-chip {
+    background-color: var(--mat-sys-surface-container-high) !important;
+    color: var(--mat-sys-on-surface) !important;
+  }
+
+  /* Tables */
+  .mat-mdc-table {
+    background-color: var(--mat-sys-surface-container) !important;
+  }
+
+  .mat-mdc-row:hover .mat-mdc-cell {
+    background-color: var(--mat-sys-surface-container-high) !important;
+  }
+
+  /* Toolbar stays primary-coloured — no override needed */
+
+  /* Dashboard stat/summary cards with hard-coded gradient backgrounds */
+  .stat-card {
+    background: var(--mat-sys-surface-container) !important;
+    color: var(--mat-sys-on-surface) !important;
+  }
+}

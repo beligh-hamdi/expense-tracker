@@ -1,0 +1,92 @@
+
+    <ng-container *transloco="let t">
+      <h2 mat-dialog-title>{{ isEdit ? t('category_form.edit_category_title') : t('category_form.new_category_title') }}</h2>
+
+      <mat-dialog-content>
+        <form class="category-form">
+
+          <!-- Preview -->
+          <div class="preview-row">
+            <div class="cat-preview" [style.background]="selectedColor() + '22'" [style.color]="selectedColor()">
+              <mat-icon>{{ selectedIcon() }}</mat-icon>
+            </div>
+            <div class="preview-label">
+              <strong>{{ name() || t('category_form.category_name_preview') }}</strong>
+              <span>{{ selectedIcon() }}</span>
+            </div>
+          </div>
+
+          <!-- Name -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ t('category_form.name_label') }}</mat-label>
+            <input matInput [value]="name()" (input)="onNameInput($event)" maxlength="40" />
+            <mat-hint align="end">{{ name().length }}/40</mat-hint>
+            <mat-error>{{ t('category_form.name_required_error') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Budget limit -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ t('category_form.monthly_budget_limit') }}</mat-label>
+            <span matTextPrefix>$&nbsp;</span>
+            <input matInput type="number" min="0" step="1" [value]="budgetLimit()" (input)="onBudgetInput($event)" />
+            <mat-hint>{{ t('category_form.set_to_zero_no_limit') }}</mat-hint>
+          </mat-form-field>
+
+          <!-- Color picker -->
+          <div class="picker-section">
+            <div class="picker-label">{{ t('category_form.color_label') }}</div>
+            <div class="color-grid">
+              @for (opt of colorOptions; track opt.token) {
+                <button
+                  type="button"
+                  class="color-swatch"
+                  [style.background]="opt.resolved"
+                  [class.selected]="selectedColor() === opt.resolved"
+                  [matTooltip]="opt.label"
+                  (click)="selectColor(opt.resolved)"
+                >
+                  @if (selectedColor() === opt.resolved) {
+                    <mat-icon class="check-icon">check</mat-icon>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Icon picker -->
+          <div class="picker-section">
+            <div class="picker-label">{{ t('category_form.icon_label') }}</div>
+            @for (group of iconOptions; track group.group) {
+              <div class="icon-group-label">{{ t('category_form.' + group.key) }}</div>
+              <div class="icon-grid">
+                @for (icon of group.icons; track icon) {
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    [class.selected]="selectedIcon() === icon"
+                    [style.color]="selectedIcon() === icon ? selectedColor() : ''"
+                    [matTooltip]="icon"
+                    (click)="selectIcon(icon)"
+                  >
+                    <mat-icon>{{ icon }}</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+        </form>
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close>{{ t('category_form.cancel') }}</button>
+        <button
+          mat-raised-button
+          color="primary"
+          [disabled]="!isValid()"
+          (click)="submit()"
+        >
+          {{ isEdit ? t('category_form.save_changes') : t('category_form.create_category') }}
+        </button>
+      </mat-dialog-actions>
+    </ng-container>

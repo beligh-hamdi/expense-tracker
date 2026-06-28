@@ -1,0 +1,85 @@
+<div class="categories-page" *transloco="let t">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1 class="page-title">{{ t('categories.page_title') }}</h1>
+    <button mat-raised-button color="primary" (click)="openAddDialog()" [disabled]="!svc.sheetConfig.isConfigured()">
+      <mat-icon>add</mat-icon>
+      {{ t('categories.new_category') }}
+    </button>
+  </div>
+
+  <!-- Not configured -->
+  @if (!svc.sheetConfig.isConfigured()) {
+    <mat-card>
+      <mat-card-content class="notice-content">
+        <mat-icon>table_chart</mat-icon>
+        {{ t('categories.connect_spreadsheet_notice') }}
+      </mat-card-content>
+    </mat-card>
+  } @else if (svc.loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="40" />
+    </div>
+  } @else {
+
+    <!-- Summary chips -->
+    <mat-chip-set>
+      <mat-chip>
+        <mat-icon matChipAvatar>category</mat-icon>
+        {{ svc.categories().length }} {{ t('categories.categories_count') }}
+      </mat-chip>
+      <mat-chip>
+        <mat-icon matChipAvatar>savings</mat-icon>
+        {{ svc.categoriesWithBudget() }} {{ t('categories.with_budget_limits') }}
+      </mat-chip>
+    </mat-chip-set>
+
+    <!-- Grid -->
+    <div class="cat-grid">
+      @for (cat of svc.categories(); track cat.id) {
+        <mat-card class="cat-card">
+          <div class="cat-color-bar" [style.background]="cat.color"></div>
+          <mat-card-content class="cat-content">
+            <div class="cat-header">
+              <div class="cat-icon-wrap" [style.background]="cat.color + '22'" [style.color]="cat.color">
+                <mat-icon>{{ cat.icon }}</mat-icon>
+              </div>
+              <div class="cat-name-col">
+                <span class="cat-name">{{ svc.catName(cat.name) }}</span>
+                <span class="cat-icon-label">{{ cat.icon }}</span>
+              </div>
+            </div>
+            @if (cat.budgetLimit > 0) {
+              <div class="budget-section">
+                <div class="budget-label">
+                  <mat-icon class="budget-icon">savings</mat-icon>
+                  <span>{{ cat.budgetLimit | currency }} {{ t('categories.per_month') }}</span>
+                </div>
+              </div>
+            } @else {
+              <div class="no-budget">{{ t('categories.no_budget_limit') }}</div>
+            }
+          </mat-card-content>
+          <mat-card-actions class="cat-actions">
+            <button mat-icon-button [matTooltip]="t('categories.edit_tooltip')" (click)="openEditDialog(cat)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button [matTooltip]="t('categories.delete_tooltip')" color="warn" (click)="confirmDelete(cat)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      } @empty {
+        <div class="empty-state">
+          <mat-icon>category</mat-icon>
+          <p>{{ t('categories.no_categories_yet') }}</p>
+          <button mat-raised-button color="primary" (click)="openAddDialog()">
+            {{ t('categories.add_first_category') }}
+          </button>
+        </div>
+      }
+    </div>
+
+  }
+</div>

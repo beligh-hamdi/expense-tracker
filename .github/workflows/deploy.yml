@@ -1,0 +1,314 @@
+name: Deploy & Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 1. Conventional-commit-aware version bump
+  # ─────────────────────────────────────────────────────────────────────────────
+  version:
+    # Skip the version-bump commit itself to avoid an infinite loop
+    if: "!startsWith(github.event.head_commit.message, 'chore: release')"
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      tag:     ${{ steps.bump.outputs.tag }}
+      bump:    ${{ steps.bump.outputs.bump }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Determine bump type & apply version
+        id: bump
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # ── Find commits since last tag ──────────────────────────────────
+          PREV_TAG=$(git tag --sort=-version:refname | head -1)
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"%s" --no-merges)
+          else
+            COMMITS=$(git log HEAD --pretty=format:"%s" --no-merges)
+          fi
+
+          # ── Decide bump: major > minor > patch ───────────────────────────
+          BUMP="patch"
+          while IFS= read -r msg; do
+            # Breaking change: footer token or ! after type
+            if echo "$msg" | grep -qE "^[a-z]+(\(.+\))?!:|BREAKING CHANGE:"; then
+              BUMP="major"
+              break
+            fi
+            # feat → minor (only upgrade if not already major)
+            if [ "$BUMP" != "major" ] && echo "$msg" | grep -qE "^feat(\(.+\))?:"; then
+              BUMP="minor"
+            fi
+          done <<< "$COMMITS"
+
+          echo "bump=${BUMP}" >> "$GITHUB_OUTPUT"
+
+          # ── Apply npm version ────────────────────────────────────────────
+          npm version "${BUMP}" --no-git-tag-version
+
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}"         >> "$GITHUB_OUTPUT"
+
+          git add package.json
+          git commit -m "chore: release ${TAG} [skip ci]"
+          git tag "${TAG}"
+          git push origin main --follow-tags
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 2. Build the Angular app with the version baked in
+  # ─────────────────────────────────────────────────────────────────────────────
+  build:
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      APP_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Validate required secrets
+        env:
+          GOOGLE_CLIENT_ID:  ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          TOKEN_PROXY_URL:   ${{ secrets.TOKEN_PROXY_URL }}
+        run: |
+          MISSING=()
+          [ -z "$GOOGLE_CLIENT_ID"   ] && MISSING+=("GOOGLE_CLIENT_ID")
+          [ -z "$GOOGLE_REDIRECT_URI" ] && MISSING+=("GOOGLE_REDIRECT_URI")
+          [ -z "$TOKEN_PROXY_URL"    ] && MISSING+=("TOKEN_PROXY_URL")
+
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "──────────────────────────────────────────────"
+            echo "  Missing required GitHub repository secrets:"
+            echo "──────────────────────────────────────────────"
+            for s in "${MISSING[@]}"; do
+              echo "  ✗  $s"
+            done
+            echo ""
+            echo "  Go to: Settings → Secrets and variables → Actions"
+            echo "  and add the missing secrets listed above."
+            echo "──────────────────────────────────────────────"
+            exit 1
+          fi
+
+          echo "✓ All required secrets are present."
+
+      - name: Write environment files
+        env:
+          GOOGLE_CLIENT_ID:   ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          TOKEN_PROXY_URL:    ${{ secrets.TOKEN_PROXY_URL }}
+          SHEET_ID:           ${{ secrets.SHEET_ID }}
+        run: |
+          cat > src/environments/environment.ts << 'EOF'
+          export const environment = {
+            production: false,
+            version: '0.0.0-dev',
+            google: {
+              clientId: '',
+              redirectUri: 'http://localhost:4200/auth/callback',
+              tokenProxyUrl: 'http://localhost:8787/token',
+              scopes: [
+                'https://www.googleapis.com/auth/spreadsheets',
+                'profile',
+                'email',
+              ].join(' '),
+            },
+            sheetsApi: { baseUrl: 'https://sheets.googleapis.com/v4/spreadsheets', defaultSheetId: '' },
+          };
+          EOF
+
+          cat > src/environments/environment.prod.ts << EOF
+          export const environment = {
+            production: true,
+            version: '${APP_VERSION}',
+            google: {
+              clientId: '${GOOGLE_CLIENT_ID}',
+              redirectUri: '${GOOGLE_REDIRECT_URI}',
+              tokenProxyUrl: '${TOKEN_PROXY_URL}',
+              scopes: [
+                'https://www.googleapis.com/auth/spreadsheets',
+                'profile',
+                'email',
+              ].join(' '),
+            },
+            sheetsApi: { baseUrl: 'https://sheets.googleapis.com/v4/spreadsheets', defaultSheetId: '${SHEET_ID}' },
+          };
+          EOF
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npx ng build --configuration production --base-href /expense-tracker/
+
+      - name: Copy index.html → 404.html (SPA routing)
+        run: cp dist/expense-tracker-ai/browser/index.html dist/expense-tracker-ai/browser/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/expense-tracker-ai/browser
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 3. Deploy to GitHub Pages
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 4. Create GitHub Release with grouped conventional-commit notes
+  # ─────────────────────────────────────────────────────────────────────────────
+  release:
+    needs: [version, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          TAG="${{ needs.version.outputs.tag }}"
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${TAG}$" | head -1)
+
+          if [ -z "$PREV_TAG" ] || ! git rev-parse --verify "$PREV_TAG" >/dev/null 2>&1; then
+            RANGE="HEAD"
+            HEADER="Initial release"
+          else
+            RANGE="${PREV_TAG}..${TAG}"
+            HEADER="Changes since ${PREV_TAG}"
+          fi
+
+          # Collect commits, excluding chore: release and skip-ci
+          mapfile -t LINES < <(git log "$RANGE" \
+            --pretty=format:"%s|%h" \
+            --no-merges \
+            --invert-grep --grep="^\[skip ci\]\|^chore: release")
+
+          # Group by conventional commit type (arrays of lines)
+          BREAKING=() FEAT=() FIX=() REFACTOR=() PERF=() DOCS=() CHORE=() OTHER=()
+
+          for line in "${LINES[@]}"; do
+            msg="${line%|*}"
+            hash="${line##*|}"
+            entry="- ${msg} (\`${hash}\`)"
+
+            if echo "$msg" | grep -qE "^[a-z]+(\(.+\))?!:|BREAKING CHANGE:"; then
+              BREAKING+=("$entry")
+            elif echo "$msg" | grep -qE "^feat(\(.+\))?:"; then
+              FEAT+=("$entry")
+            elif echo "$msg" | grep -qE "^fix(\(.+\))?:"; then
+              FIX+=("$entry")
+            elif echo "$msg" | grep -qE "^refactor(\(.+\))?:"; then
+              REFACTOR+=("$entry")
+            elif echo "$msg" | grep -qE "^perf(\(.+\))?:"; then
+              PERF+=("$entry")
+            elif echo "$msg" | grep -qE "^docs(\(.+\))?:"; then
+              DOCS+=("$entry")
+            elif echo "$msg" | grep -qE "^chore(\(.+\))?:|^ci(\(.+\))?:|^build(\(.+\))?:"; then
+              CHORE+=("$entry")
+            else
+              OTHER+=("$entry")
+            fi
+          done
+
+          # Write notes line-by-line into a temp file (avoids EOF delimiter collisions)
+          NOTES_FILE=$(mktemp)
+
+          echo "## ${HEADER}" >> "$NOTES_FILE"
+          echo ""              >> "$NOTES_FILE"
+
+          section() {
+            local title="$1"; shift
+            local items=("$@")
+            if [ ${#items[@]} -gt 0 ]; then
+              echo "### ${title}" >> "$NOTES_FILE"
+              for item in "${items[@]}"; do
+                echo "$item" >> "$NOTES_FILE"
+              done
+              echo "" >> "$NOTES_FILE"
+            fi
+          }
+
+          section "⚠️ Breaking Changes" "${BREAKING[@]}"
+          section "✨ Features"         "${FEAT[@]}"
+          section "🐛 Bug Fixes"        "${FIX[@]}"
+          section "♻️ Refactoring"      "${REFACTOR[@]}"
+          section "⚡ Performance"      "${PERF[@]}"
+          section "📚 Documentation"    "${DOCS[@]}"
+          section "🔧 Chores"           "${CHORE[@]}"
+          section "🔀 Other"            "${OTHER[@]}"
+
+          echo "---"                                                          >> "$NOTES_FILE"
+          echo "**Live app:** https://beligh-hamdi.github.io/expense-tracker/" >> "$NOTES_FILE"
+
+          # Use a random delimiter that cannot appear in commit messages
+          DELIM="RELEASE_NOTES_$(openssl rand -hex 8)"
+          echo "notes<<${DELIM}" >> "$GITHUB_OUTPUT"
+          cat "$NOTES_FILE"      >> "$GITHUB_OUTPUT"
+          echo "${DELIM}"        >> "$GITHUB_OUTPUT"
+          rm "$NOTES_FILE"
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              tag_name:  '${{ needs.version.outputs.tag }}',
+              name:      'Release ${{ needs.version.outputs.tag }} (${{ needs.version.outputs.bump }})',
+              body:      `${{ steps.notes.outputs.notes }}`,
+              draft:     false,
+              prerelease: false,
+            });

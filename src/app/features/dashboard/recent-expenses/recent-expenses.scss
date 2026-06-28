@@ -1,0 +1,23 @@
+
+    .recent-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0;
+    }
+    .recent-cat-dot {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      mat-icon { color: white; font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+    }
+    .recent-info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .recent-desc { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .recent-date { font-size: 0.75rem; color: var(--mat-sys-on-surface-variant); }
+    .recent-amount { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .no-data { text-align: center; color: var(--mat-sys-on-surface-variant); padding: 2rem 0; }
+  

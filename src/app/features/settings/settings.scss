@@ -1,0 +1,139 @@
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 680px;
+}
+
+.settings-card {
+  mat-card-content {
+    padding-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.connected-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--mat-sys-tertiary-container);
+  border-radius: var(--mat-sys-corner-small);
+  padding: 0.625rem 1rem;
+  flex-wrap: wrap;
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+.ok-icon {
+  color: var(--mat-sys-tertiary);
+}
+
+.sheet-id-chip {
+  background: var(--mat-sys-surface-container-highest);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--mat-sys-corner-extra-small);
+  font-size: 0.8rem;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+
+  a {
+    color: var(--mat-sys-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+}
+
+.inline-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+.how-to {
+  background: var(--mat-sys-surface-container);
+  border-radius: var(--mat-sys-corner-small);
+  padding: 0.75rem 1rem;
+}
+
+.hint-title {
+  margin: 0 0 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.8;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+mat-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.5rem 1rem 1rem;
+
+  mat-spinner {
+    display: inline-block;
+  }
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--mat-sys-outline-variant);
+}
+
+.user-name {
+  font-weight: 500;
+}
+
+.user-email {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.version-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.version-label {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.version-badge {
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface);
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--mat-sys-corner-extra-small);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}

@@ -1,0 +1,176 @@
+<div class="settings-page" *transloco="let t">
+
+  <!-- Google Sheet Setup -->
+  <mat-card class="settings-card">
+    <mat-card-header>
+      <mat-icon mat-card-avatar>table_chart</mat-icon>
+      <mat-card-title>{{ t('settings.google_sheet_title') }}</mat-card-title>
+      <mat-card-subtitle>{{ t('settings.google_sheet_subtitle') }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (svc.sheetConfig.isConfigured()) {
+        <div class="connected-badge">
+          <mat-icon class="ok-icon">check_circle</mat-icon>
+          <span>{{ t('settings.connected_to_spreadsheet') }}</span>
+          <code class="sheet-id-chip">{{ svc.sheetConfig.spreadsheetId() }}</code>
+        </div>
+        <p class="hint">
+          <a [href]="svc.spreadsheetUrl()" target="_blank" rel="noopener">
+            {{ t('settings.open_spreadsheet') }} <mat-icon class="inline-icon">open_in_new</mat-icon>
+          </a>
+        </p>
+      }
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ t('settings.spreadsheet_id_label') }}</mat-label>
+        <input matInput
+          [ngModel]="svc.spreadsheetIdInput()"
+          (ngModelChange)="svc.spreadsheetIdInput.set($event)"
+          [placeholder]="t('settings.spreadsheet_id_label')"
+          [disabled]="svc.loading()" />
+        <mat-hint>{{ t('settings.spreadsheet_id_hint') }}</mat-hint>
+      </mat-form-field>
+      <div class="how-to">
+        <p class="hint-title">{{ t('settings.how_to_setup') }}</p>
+        <ol class="steps">
+          <li>{{ t('settings.step_1') }}</li>
+          <li>{{ t('settings.step_2') }}</li>
+          <li>{{ t('settings.step_3') }}</li>
+          <li>{{ t('settings.step_4') }}</li>
+        </ol>
+      </div>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary"
+        [disabled]="!svc.spreadsheetIdInput().trim() || svc.loading()"
+        (click)="svc.connectSheet()">
+        @if (svc.loading()) { <mat-spinner diameter="18" /> } @else { <mat-icon>link</mat-icon> }
+        {{ svc.sheetConfig.isConfigured() ? t('settings.reconnect') : t('settings.connect_setup') }}
+      </button>
+      @if (svc.sheetConfig.isConfigured()) {
+        <button mat-button color="warn" (click)="svc.disconnectSheet()">
+          <mat-icon>link_off</mat-icon>
+          {{ t('settings.disconnect') }}
+        </button>
+      }
+    </mat-card-actions>
+  </mat-card>
+
+  <mat-divider />
+
+  <!-- Account -->
+  <mat-card class="settings-card">
+    <mat-card-header>
+      <mat-icon mat-card-avatar>account_circle</mat-icon>
+      <mat-card-title>{{ t('settings.account_title') }}</mat-card-title>
+      <mat-card-subtitle>{{ t('settings.signed_in_with_google') }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (svc.auth.user(); as user) {
+        <div class="user-row">
+          <img [src]="user.picture" [alt]="user.name" class="avatar" />
+          <div>
+            <div class="user-name">{{ user.name }}</div>
+            <div class="user-email">{{ user.email }}</div>
+          </div>
+        </div>
+      }
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-stroked-button color="warn" (click)="svc.auth.logout()">
+        <mat-icon>logout</mat-icon>
+        {{ t('settings.sign_out') }}
+      </button>
+    </mat-card-actions>
+  </mat-card>
+
+  <mat-divider />
+
+  <!-- Language -->
+  <mat-card class="settings-card">
+    <mat-card-header>
+      <mat-card-title>{{ t('settings.language_title') }}</mat-card-title>
+      <mat-card-subtitle>{{ t('settings.language_subtitle') }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-button-toggle-group
+        [value]="svc.langService.activeLang()"
+        (change)="svc.langService.setLang($event.value)">
+        @for (lang of svc.langService.languages; track lang.code) {
+          <mat-button-toggle [value]="lang.code">{{ lang.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-divider />
+
+  <!-- AI & Insights -->
+  <mat-card class="settings-card">
+    <mat-card-header>
+      <mat-icon mat-card-avatar>auto_awesome</mat-icon>
+      <mat-card-title>{{ t('settings.ai_title') }}</mat-card-title>
+      <mat-card-subtitle>{{ t('settings.ai_subtitle') }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (svc.sheetConfig.hasAiKey()) {
+        <div class="connected-badge">
+          <mat-icon class="ok-icon">check_circle</mat-icon>
+          <span>{{ t('settings.ai_key_configured') }}</span>
+        </div>
+      }
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ t('settings.ai_key_label') }}</mat-label>
+        <input matInput type="password"
+          [ngModel]="svc.aiApiKeyInput()"
+          (ngModelChange)="svc.aiApiKeyInput.set($event)"
+          [placeholder]="t('settings.ai_key_placeholder')"
+          [disabled]="svc.savingKey()" />
+        <mat-hint>{{ t('settings.ai_key_hint') }}</mat-hint>
+      </mat-form-field>
+      <p class="hint">
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">
+          {{ t('settings.ai_key_get') }} <mat-icon class="inline-icon">open_in_new</mat-icon>
+        </a>
+      </p>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary"
+        [disabled]="svc.savingKey()"
+        (click)="svc.saveAiApiKey()">
+        @if (svc.savingKey()) { <mat-spinner diameter="18" /> } @else { <mat-icon>save</mat-icon> }
+        {{ t('settings.ai_key_save') }}
+      </button>
+      @if (svc.sheetConfig.hasAiKey()) {
+        <button mat-button color="warn"
+          [disabled]="svc.savingKey()"
+          (click)="svc.aiApiKeyInput.set(''); svc.saveAiApiKey()">
+          <mat-icon>delete</mat-icon>
+          {{ t('settings.ai_key_remove') }}
+        </button>
+      }
+    </mat-card-actions>
+  </mat-card>
+
+  <mat-divider />
+
+  <!-- About / Version -->
+  <mat-card class="settings-card">
+    <mat-card-header>
+      <mat-icon mat-card-avatar>info</mat-icon>
+      <mat-card-title>{{ t('settings.about_title') }}</mat-card-title>
+      <mat-card-subtitle>{{ t('settings.about_subtitle') }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="version-row">
+        <span class="version-label">{{ t('settings.version_label') }}</span>
+        <code class="version-badge">v{{ svc.appVersion }}</code>
+      </div>
+      <p class="hint">
+        <a href="https://github.com/beligh-hamdi/expense-tracker/releases" target="_blank" rel="noopener">
+          {{ t('settings.changelog_link') }} <mat-icon class="inline-icon">open_in_new</mat-icon>
+        </a>
+      </p>
+    </mat-card-content>
+  </mat-card>
+
+</div>

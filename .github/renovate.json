@@ -1,0 +1,73 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "group:allNonMajor"
+  ],
+  "labels": ["dependencies"],
+  "assignees": ["beligh-hamdi"],
+  "reviewers": ["beligh-hamdi"],
+  "schedule": ["before 6am on monday"],
+  "timezone": "Africa/Algiers",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "packageRules": [
+    {
+      "description": "Group all Angular packages together",
+      "matchPackagePrefixes": ["@angular/", "@angular-devkit/", "@schematics/"],
+      "groupName": "Angular",
+      "groupSlug": "angular"
+    },
+    {
+      "description": "Group Angular Material + CDK",
+      "matchPackagePrefixes": ["@angular/material", "@angular/cdk"],
+      "groupName": "Angular Material",
+      "groupSlug": "angular-material"
+    },
+    {
+      "description": "Group Chart.js packages",
+      "matchPackagePrefixes": ["chart.js", "ng2-charts"],
+      "groupName": "Chart.js",
+      "groupSlug": "chartjs"
+    },
+    {
+      "description": "Group all linting/formatting tools",
+      "matchPackageNames": ["eslint", "prettier", "typescript-eslint"],
+      "matchPackagePrefixes": ["@typescript-eslint/", "eslint-plugin-"],
+      "groupName": "Linting",
+      "groupSlug": "linting"
+    },
+    {
+      "description": "Auto-merge minor and patch updates for dev dependencies",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Require manual review for major updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major-update"]
+    },
+    {
+      "description": "Require manual review for production dependency updates",
+      "matchDepTypes": ["dependencies"],
+      "automerge": false
+    },
+    {
+      "description": "Pin GitHub Actions to exact versions",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions",
+      "pinDigests": false
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  }
+}

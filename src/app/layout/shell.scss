@@ -1,0 +1,225 @@
+
+    .shell-container {
+      height: 100vh;
+    }
+
+    .sidenav {
+      width: 240px;
+      background: #1a1a2e;
+      color: #e8eaf6;
+      overflow-x: hidden;
+
+      /* Override Material's list-item CSS variables so all slots
+         (icon, text, ripple) inherit the right colour on dark bg */
+      --mat-list-list-item-label-text-color: #e8eaf6;
+      --mat-list-list-item-supporting-text-color: rgba(232,234,246,0.6);
+      --mat-list-list-item-leading-icon-color: rgba(232,234,246,0.7);
+      --mat-list-list-item-hover-label-text-color: #ffffff;
+      --mat-list-list-item-hover-leading-icon-color: #ffffff;
+      --mat-list-list-item-focus-label-text-color: #ffffff;
+    }
+
+    .sidenav-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.25rem 1rem;
+    }
+
+    .brand-icon {
+      color: #7c83fd;
+      font-size: 1.75rem;
+      width: 1.75rem;
+      height: 1.75rem;
+      line-height: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      line-height: 1.75rem;
+      color: #ffffff;
+    }
+
+    mat-nav-list a {
+      color: #e8eaf6;
+      border-radius: 8px;
+      margin: 2px 8px;
+    }
+
+    mat-nav-list a:hover {
+      color: #ffffff;
+      background: rgba(255,255,255,0.08);
+    }
+
+    mat-nav-list a.active-link {
+      background: rgba(124,131,253,0.22);
+      color: #a5b4fc;
+
+      /* Active icon also picks up accent colour */
+      --mat-list-list-item-leading-icon-color: #a5b4fc;
+      --mat-list-list-item-label-text-color: #a5b4fc;
+    }
+
+    .sidenav-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      overflow: hidden;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #7c83fd;
+      flex-shrink: 0;
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .user-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #e8eaf6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-email {
+      font-size: 0.72rem;
+      color: rgba(232,234,246,0.55);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    /* Force the toolbar's inner row to be a proper flex container */
+    .toolbar,
+    .toolbar > * {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .toolbar-title {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin: 0 0.5rem;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    .toolbar-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+
+    .menu-user-info {
+      display: flex;
+      flex-direction: column;
+      padding: 0.75rem 1rem;
+    }
+
+    .menu-user-info small {
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .pwa-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.875rem;
+      flex-wrap: wrap;
+
+      span { flex: 1; }
+    }
+
+    .update-banner {
+      background: var(--mat-sys-tertiary-container);
+      border-bottom: 1px solid var(--mat-sys-tertiary);
+      color: var(--mat-sys-on-tertiary-container);
+      mat-icon { color: var(--mat-sys-tertiary); }
+    }
+
+    .offline-banner {
+      background: var(--mat-sys-error-container);
+      border-bottom: 1px solid var(--mat-sys-error);
+      color: var(--mat-sys-on-error-container);
+      mat-icon { color: var(--mat-sys-error); }
+    }
+
+    .install-banner {
+      background: var(--mat-sys-primary-container);
+      border-bottom: 1px solid var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary-container);
+      mat-icon { color: var(--mat-sys-primary); }
+    }
+
+    .setup-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--mat-sys-secondary-container);
+      border-bottom: 1px solid var(--mat-sys-secondary);
+      padding: 0.6rem 1.25rem;
+      font-size: 0.9rem;
+      color: var(--mat-sys-on-secondary-container);
+
+      mat-icon { color: var(--mat-sys-secondary); }
+    }
+
+    .page-content {
+      padding: 1.5rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .lang-code {
+      font-size: 0.75rem;
+      font-weight: 700;
+      min-width: 2rem;
+      opacity: 0.7;
+    }
+
+    .lang-check {
+      margin-left: auto;
+      font-size: 1rem;
+      width: 1rem;
+      height: 1rem;
+      color: var(--mat-sys-primary);
+    }
+
+    .lang-active {
+      background: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+    }
+  
