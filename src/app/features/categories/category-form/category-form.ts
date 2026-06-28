@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoModule } from '@jsverse/transloco';
 import { Category } from '@shared/models/category.model';
 import { MAT_COLOR_TOKENS, resolveMatToken } from '@shared/utils/mat-colors.util';
-import { crypto } from '@shared/utils/crypto.util';
+import { slugify } from '@shared/utils/crypto.util';
 
 export interface CategoryFormData {
   category?: Category;
@@ -110,7 +110,7 @@ export class CategoryFormComponent {
   submit(): void {
     if (!this.isValid()) return;
     const category: Category = {
-      id:          this.data.category?.id ?? crypto.uuid(),
+      id:          this.data.category?.id ?? slugify(this.name().trim()),
       name:        this.name().trim(),
       color:       this.selectedColor(),
       icon:        this.selectedIcon(),

@@ -12,7 +12,7 @@ import {
   DEFAULT_CATEGORIES,
 } from '@shared/models/category.model';
 import { resolveMatToken } from '@shared/utils/mat-colors.util';
-import { crypto as cryptoUtil } from '@shared/utils/crypto.util';
+import { slugify } from '@shared/utils/crypto.util';
 
 // ── Sheets API response shapes ───────────────────────────────────────────────
 
@@ -134,7 +134,7 @@ export class GoogleSheetsService {
     const rows = DEFAULT_CATEGORIES.map((c, i) => {
       const name  = names[i] && names[i] !== c.nameKey ? names[i] : c.name;
       const color = resolveMatToken(c.colorToken) || c.colorToken; // fallback to token name if not resolved
-      return categoryToRow({ id: cryptoUtil.uuid(), name, color, budgetLimit: c.budgetLimit, icon: c.icon });
+      return categoryToRow({ id: slugify(c.name), name, color, budgetLimit: c.budgetLimit, icon: c.icon });
     });
     if (rows.length === 0) return;
     await firstValueFrom(
